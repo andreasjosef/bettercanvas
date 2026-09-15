@@ -1,13 +1,16 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { fetchCourses, ProxyUnreachableError } from '../api/canvas'
+import { RECONNECT_REASON } from '../router'
 import { saveToken } from '../token'
 
+const route = useRoute()
 const router = useRouter()
 const token = ref('')
 const error = ref<string | null>(null)
 const submitting = ref(false)
+const reconnecting = computed(() => route.query.reason === RECONNECT_REASON)
 
 async function connect(): Promise<void> {
   const trimmed = token.value.trim()
@@ -34,8 +37,16 @@ async function connect(): Promise<void> {
 
 <template>
   <main class="flex min-h-screen flex-col items-center justify-center p-4 text-center gap-2">
-    <h1 class="m-0 font-heading text-heading text-2xl">Connect</h1>
-    <p class="m-0 text-text-muted">Paste your Canvas Personal Access Token to begin.</p>
+    <h1 class="m-0 font-heading text-heading text-2xl">
+      {{ reconnecting ? 'Reconnect' : 'Connect' }}
+    </h1>
+    <p v-if="reconnecting" role="status" class="m-0 text-sm">
+      Your Canvas token is invalid or has expired. Paste a fresh token to
+      reconnect.
+    </p>
+    <p v-else class="m-0 text-text-muted">
+      Paste your Canvas Personal Access Token to begin.
+    </p>
     <form class="flex flex-col items-center gap-2 max-w-sm w-full" @submit.prevent="connect">
       <input
         v-model="token"
