@@ -1,25 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { flushPromises, mount } from '@vue/test-utils'
-import App from '../App.vue'
-import { createAppRouter } from '../router'
+import { flushPromises } from '@vue/test-utils'
+import { coursesResponse, mountAppAtPath } from '../test/appHarness'
 import { TOKEN_STORAGE_KEY } from '../token'
 
-function coursesResponse(): Response {
-  return new Response(JSON.stringify([{ id: 585, name: 'Course 585' }]), {
-    status: 200,
-    headers: { 'content-type': 'application/json' },
-  })
-}
+const mountConnect = () => mountAppAtPath('/connect')
 
-async function mountConnect() {
-  const router = createAppRouter()
-  await router.push('/connect')
-  await router.isReady()
-  const wrapper = mount(App, { global: { plugins: [router] } })
-  return { wrapper, router }
-}
-
-async function submitToken(wrapper: ReturnType<typeof mount>) {
+async function submitToken(wrapper: Awaited<ReturnType<typeof mountConnect>>['wrapper']) {
   const input = wrapper.find('input[name="token"]')
   await input.setValue('token123')
   await wrapper.find('form').trigger('submit')
@@ -40,16 +26,17 @@ describe('ConnectView', () => {
   })
 
   it('on success: verifies via proxy, persists token, navigates onward', async () => {
-    fetchMock.mockResolvedValue(coursesResponse())
+    fetchMock.mockImplementation(() =>
+      coursesResponse([{ id: 585, name: 'Course 585' }]),
+    )
     const { wrapper, router } = await mountConnect()
 
     await submitToken(wrapper)
 
-    expect(fetchMock).toHaveBeenCalledOnce()
-    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit]
-    expect(url).toBe('/api/v1/courses')
-    expect(url).not.toContain('chasacademy.instructure.com')
-    expect(init.headers).toMatchObject({ Authorization: 'Bearer token123' })
+    const calls = fetchMock.mock.calls as [string, RequestInit][]
+    expect(calls.map(([url]) => url)).toEqual(['/api/v1/courses', '/api/v1/courses'])
+    expect(calls[0]![0]).not.toContain('chasacademy.instructure.com')
+    expect(calls[0]![1].headers).toMatchObject({ Authorization: 'Bearer token123' })
     expect(localStorage.getItem(TOKEN_STORAGE_KEY)).toBe('token123')
     expect(router.currentRoute.value.name).toBe('picker')
   })
