@@ -89,6 +89,12 @@ onMounted(async () => {
           <!-- eslint-disable-next-line vue/no-v-html -- content passes through sanitizeCanvasHtml first -->
           <div v-else v-html="sanitizedHtml" />
         </template>
+        <!--
+          Only Page/Assignment items link here from the Modules view, but a
+          deep link (pasted URL) can point at a link-out item type — render
+          it as a Canvas link-out rather than an empty article (user story
+          14: never a broken inline preview of content we don't own).
+        -->
         <a
           v-else-if="item.html_url"
           :href="item.html_url"
@@ -113,14 +119,7 @@ onMounted(async () => {
 .reading-column {
   max-width: 65ch;
 }
-.reading-column :deep(h1) {
-  font-family: var(--font-heading);
-  color: var(--color-heading);
-  font-size: var(--text-2xl);
-  line-height: var(--leading-tight);
-  font-weight: 500;
-  margin: 0 0 var(--space-4);
-}
+.reading-column :deep(h1),
 .reading-column :deep(h2),
 .reading-column :deep(h3),
 .reading-column :deep(h4),
@@ -132,6 +131,10 @@ onMounted(async () => {
   line-height: var(--leading-tight);
   font-weight: 500;
   margin: var(--space-5) 0 var(--space-3);
+}
+.reading-column :deep(h1) {
+  font-size: var(--text-2xl);
+  margin: 0 0 var(--space-4);
 }
 .reading-column :deep(p) {
   margin: 0 0 var(--space-4);
