@@ -24,6 +24,7 @@ const SIX_ITEM_TYPES_FIXTURE = [
         id: 3,
         type: 'Assignment',
         title: 'Lab 1',
+        content_id: 3,
         html_url: `${CANVAS_ORIGIN}/courses/585/modules/items/3`,
       },
       {
@@ -107,7 +108,7 @@ describe('ProgramModulesView', () => {
 
   it('routes Page and Assignment items toward the reading view', async () => {
     fetchMock.mockResolvedValue(modulesResponse(SIX_ITEM_TYPES_FIXTURE))
-    const { wrapper } = await mountAppAtPath('/programs/585/modules')
+    const { wrapper, router } = await mountAppAtPath('/programs/585/modules')
 
     const pageLink = wrapper.find('a[href="/programs/585/read/2"]')
     const assignmentLink = wrapper.find('a[href="/programs/585/read/3"]')
@@ -116,7 +117,10 @@ describe('ProgramModulesView', () => {
 
     await assignmentLink.trigger('click')
     await flushPromises()
-    expect(wrapper.text()).toContain('Reading')
+    expect(router.currentRoute.value.name).toBe('reading')
+    expect(
+      (router.currentRoute.value.params as Record<string, string>).itemId,
+    ).toBe('3')
   })
 
   it('renders File, Discussion, Quiz, ExternalTool and ExternalUrl items as external links to Canvas, not inline content', async () => {

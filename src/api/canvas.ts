@@ -59,6 +59,8 @@ export interface ModuleItem {
   id: number
   type: ModuleItemType
   title: string
+  /** Id of the content this item points at (Page id, Assignment id, …). */
+  content_id?: number
   page_url?: string
   html_url?: string
   external_url?: string
@@ -89,6 +91,54 @@ export async function fetchModules(
     token,
     `/api/v1/courses/${courseId}/modules?include[]=items&per_page=100`,
   )
+}
+
+export interface LocatedModuleItem {
+  item: ModuleItem
+  module: CourseModule
+}
+
+export async function locateModuleItem(
+  token: string,
+  courseId: number,
+  itemId: number,
+): Promise<LocatedModuleItem | null> {
+  const modules = await fetchModules(token, courseId)
+  for (const module_ of modules) {
+    const item = module_.items?.find((candidate) => candidate.id === itemId)
+    if (item) return { item, module: module_ }
+  }
+  return null
+}
+
+/** The reading body of a Canvas Course Page (null when unpublished). */
+export async function fetchPageBody(
+  token: string,
+  courseId: number,
+  pageUrl: string,
+): Promise<string | null> {
+  const response = await canvasFetch(
+    token,
+    `/api/v1/courses/${courseId}/pages/${encodeURIComponent(pageUrl)}`,
+  )
+  const page = (await response.json()) as { body?: string | null }
+  return page.body ?? null
+}
+
+/** The HTML description of a Canvas Assignment (null when it has none). */
+export async function fetchAssignmentDescription(
+  token: string,
+  courseId: number,
+  assignmentId: number,
+): Promise<string | null> {
+  const response = await canvasFetch(
+    token,
+    `/api/v1/courses/${courseId}/assignments/${assignmentId}`,
+  )
+  const assignment = (await response.json()) as {
+    description?: string | null
+  }
+  return assignment.description ?? null
 }
 
 async function fetchAllPages<T>(token: string, startPath: string): Promise<T[]> {
