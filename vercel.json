@@ -2,8 +2,6 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "rewrites": [
     { "source": "/api/v1/:path*", "destination": "/api/canvas-proxy" },
-    { "source": "/connect", "destination": "/index.html" },
-    { "source": "/picker", "destination": "/index.html" },
-    { "source": "/programs/:path*", "destination": "/index.html" }
+    { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
