@@ -98,6 +98,14 @@ describe('parseNextLink', () => {
     )
   })
 
+  it('extracts rel="next" regardless of parameter order or quote style', () => {
+    const header = `<${UPSTREAM_ORIGIN}/api/v1/courses?page=2>; title="Page 2"; rel='next'`
+
+    expect(parseNextLink(header)).toBe(
+      `${UPSTREAM_ORIGIN}/api/v1/courses?page=2`,
+    )
+  })
+
   it('returns null when there is no rel="next"', () => {
     expect(
       parseNextLink(`<${UPSTREAM_ORIGIN}/api/v1/courses?page=1>; rel="current"`),

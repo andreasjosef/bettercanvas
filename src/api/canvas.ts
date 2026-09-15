@@ -13,7 +13,6 @@ export class CanvasError extends Error {
 export interface Course {
   id: number
   name: string
-  workflow_state?: string
 }
 
 async function canvasFetch(token: string, proxyPath: string): Promise<Response> {
@@ -47,7 +46,7 @@ export function proxyPathFromNextLink(linkHeader: string | null): string | null 
   if (!next) return null
   const url = new URL(next, 'https://proxy.invalid')
   if (!url.pathname.startsWith(PROXY_API_PREFIX)) {
-    throw new CanvasError(0, `Refusing to follow next link outside /api/v1: ${next}`)
+    throw new Error(`Refusing to follow next link outside /api/v1: ${next}`)
   }
   return `${url.pathname}${url.search}`
 }
@@ -55,9 +54,9 @@ export function proxyPathFromNextLink(linkHeader: string | null): string | null 
 export function parseNextLink(linkHeader: string | null): string | null {
   if (!linkHeader) return null
   for (const part of linkHeader.split(',')) {
-    const match = /<([^>]*)>\s*;\s*rel="([^"]*)"/.exec(part.trim())
-    if (match && match[2] === 'next') {
-      return match[1]
+    const url = /<([^>]*)>/.exec(part)
+    if (url && /;\s*rel\s*=\s*(?:"next"|'next')/.test(part)) {
+      return url[1]
     }
   }
   return null

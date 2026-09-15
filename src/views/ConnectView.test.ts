@@ -1,6 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { mount } from '@vue/test-utils'
-import { flushPromises } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 import App from '../App.vue'
 import { createAppRouter } from '../router'
 import { TOKEN_STORAGE_KEY } from '../token'
