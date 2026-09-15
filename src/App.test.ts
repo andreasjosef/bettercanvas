@@ -27,10 +27,16 @@ describe('App routing', () => {
     ['/picker', 'Pick your Programs'],
     ['/programs/p1/modules', 'Modules'],
     ['/programs/p1/assignments', 'Assignments'],
-    ['/programs/p1/read/item1', 'Reading'],
   ])('renders the %s screen for %s', async (path, expectedHeading) => {
     const wrapper = await mountAt(path)
     expect(wrapper.find('h1').text()).toBe(expectedHeading)
+  })
+
+  it('renders the reading screen for /programs/p1/read/item1', async () => {
+    // The reading view loads its content asynchronously (no fetch stub
+    // here), so assert on its deterministic initial state.
+    const wrapper = await mountAt('/programs/p1/read/item1')
+    expect(wrapper.text()).toContain('Loading…')
   })
 
   it('redirects unknown paths to home', async () => {

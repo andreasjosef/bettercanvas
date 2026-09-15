@@ -1,8 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from 'vitest'
 import {
+  fetchAssignmentDescription,
   fetchCourses,
   fetchModules,
   fetchNextDueAssignment,
+  fetchPageBody,
+  locateModuleItem,
   parseNextLink,
   setAuthFailureHandler,
 } from './canvas.ts'
@@ -242,6 +245,169 @@ describe('fetchModules', () => {
       status: 401,
     })
     expect(fetchMock).toHaveBeenCalledOnce()
+  })
+})
+
+describe('fetchPageBody', () => {
+  let fetchMock: ReturnType<typeof vi.fn>
+
+  beforeEach(() => {
+    fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('GETs the Course Page by its page_url through the proxy, relaying the token', async () => {
+    fetchMock.mockResolvedValue(
+      jsonResponse({ url: 'intro-to-vue', title: 'Intro to Vue', body: '<p>Vue is a framework.</p>' }),
+    )
+
+    const body = await fetchPageBody('token123', 585, 'intro-to-vue')
+
+    expect(fetchMock).toHaveBeenCalledOnce()
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit]
+    expect(url).toBe('/api/v1/courses/585/pages/intro-to-vue')
+    expect(url).not.toContain(UPSTREAM_ORIGIN)
+    expect(init.method).toBe('GET')
+    expect(init.headers).toMatchObject({ Authorization: 'Bearer token123' })
+    expect(body).toBe('<p>Vue is a framework.</p>')
+  })
+
+  it('URL-encodes the page_url slug in the proxy path', async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ body: '<p>x</p>' }))
+
+    await fetchPageBody('token123', 585, 'spaces & weird chars')
+
+    const [url] = fetchMock.mock.calls[0] as [string, RequestInit]
+    expect(url).toBe('/api/v1/courses/585/pages/spaces%20%26%20weird%20chars')
+  })
+
+  it('returns null for an unpublished Page with no body', async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ url: 'draft', title: 'Draft', body: null }))
+
+    await expect(fetchPageBody('token123', 585, 'draft')).resolves.toBeNull()
+  })
+
+  it('throws a CanvasError carrying the status for a 401 response', async () => {
+    fetchMock.mockResolvedValue(
+      jsonResponse({ error: 'Invalid token' }, { status: 401 }),
+    )
+
+    await expect(
+      fetchPageBody('bad-token', 585, 'intro-to-vue'),
+    ).rejects.toMatchObject({ name: 'CanvasError', status: 401 })
+  })
+})
+
+describe('fetchAssignmentDescription', () => {
+  let fetchMock: ReturnType<typeof vi.fn>
+
+  beforeEach(() => {
+    fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('GETs the Assignment detail by content id through the proxy, relaying the token', async () => {
+    fetchMock.mockResolvedValue(
+      jsonResponse({ id: 3, name: 'Lab 1', description: '<p>Build a lab.</p>' }),
+    )
+
+    const description = await fetchAssignmentDescription('token123', 585, 3)
+
+    expect(fetchMock).toHaveBeenCalledOnce()
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit]
+    expect(url).toBe('/api/v1/courses/585/assignments/3')
+    expect(url).not.toContain(UPSTREAM_ORIGIN)
+    expect(init.method).toBe('GET')
+    expect(init.headers).toMatchObject({ Authorization: 'Bearer token123' })
+    expect(description).toBe('<p>Build a lab.</p>')
+  })
+
+  it('returns null for an Assignment with no description', async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ id: 3, name: 'Lab 1', description: null }))
+
+    await expect(
+      fetchAssignmentDescription('token123', 585, 3),
+    ).resolves.toBeNull()
+  })
+
+  it('throws a CanvasError carrying the status for a 401 response', async () => {
+    fetchMock.mockResolvedValue(
+      jsonResponse({ error: 'Invalid token' }, { status: 401 }),
+    )
+
+    await expect(
+      fetchAssignmentDescription('bad-token', 585, 3),
+    ).rejects.toMatchObject({ name: 'CanvasError', status: 401 })
+  })
+})
+
+describe('locateModuleItem', () => {
+  let fetchMock: ReturnType<typeof vi.fn>
+
+  beforeEach(() => {
+    fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('finds an item by id across all of the Course\'s Modules and returns the Module that contains it', async () => {
+    fetchMock.mockResolvedValue(
+      jsonResponse([
+        {
+          id: 101,
+          name: 'Module 01',
+          position: 1,
+          items: [
+            { id: 1, type: 'SubHeader', title: 'Getting started' },
+            {
+              id: 2,
+              type: 'Page',
+              title: 'Intro to Vue',
+              page_url: 'intro-to-vue',
+              content_id: 400,
+            },
+          ],
+        },
+        {
+          id: 102,
+          name: 'Module 02',
+          position: 2,
+          items: [
+            { id: 7, type: 'Assignment', title: 'Lab 1', content_id: 3 },
+          ],
+        },
+      ]),
+    )
+
+    const found = await locateModuleItem('token123', 585, 7)
+
+    const [url] = fetchMock.mock.calls[0] as [string, RequestInit]
+    expect(url).toBe('/api/v1/courses/585/modules?include[]=items&per_page=100')
+    expect(found).toEqual({
+      item: { id: 7, type: 'Assignment', title: 'Lab 1', content_id: 3 },
+      module: { id: 102, name: 'Module 02', position: 2, items: [{ id: 7, type: 'Assignment', title: 'Lab 1', content_id: 3 }] },
+    })
+  })
+
+  it('resolves to null when no Module item with that id exists', async () => {
+    fetchMock.mockResolvedValue(
+      jsonResponse([
+        { id: 101, name: 'Module 01', position: 1, items: [{ id: 1, type: 'SubHeader', title: 'x' }] },
+      ]),
+    )
+
+    await expect(locateModuleItem('token123', 585, 999)).resolves.toBeNull()
   })
 })
 
