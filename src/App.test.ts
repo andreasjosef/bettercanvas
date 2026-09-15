@@ -1,8 +1,9 @@
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createMemoryHistory } from 'vue-router'
 import App from './App.vue'
 import { createAppRouter } from './router'
+import { TOKEN_STORAGE_KEY } from './token'
 
 const mountAt = async (path: string) => {
   const router = createAppRouter(createMemoryHistory())
@@ -13,6 +14,13 @@ const mountAt = async (path: string) => {
 }
 
 describe('App routing', () => {
+  beforeEach(() => {
+    localStorage.clear()
+    // HomeView fetches with the stored token; seed one so the '/' route
+    // renders Home rather than redirecting to Connect.
+    localStorage.setItem(TOKEN_STORAGE_KEY, 'routing-test-token')
+  })
+
   it.each([
     ['/', 'Home'],
     ['/connect', 'Connect'],
