@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
-import { loadPrograms } from '../programs'
+import { findProgram } from '../programs'
 
 const props = defineProps<{
   programId: string
@@ -14,9 +14,7 @@ const tabs = [
 ] as const
 
 const programName = computed(() => {
-  const program = loadPrograms().find(
-    (candidate) => candidate.courseId === Number(props.programId),
-  )
+  const program = findProgram(props.programId)
   if (program) return program.name
   return props.active === 'modules' ? 'Modules' : 'Assignments'
 })

@@ -6,6 +6,12 @@ export interface Program {
   archived: boolean
 }
 
+export function findProgram(programId: string): Program | undefined {
+  return loadPrograms().find(
+    (program) => program.courseId === Number(programId),
+  )
+}
+
 export function savePrograms(programs: Program[]): void {
   localStorage.setItem(PROGRAMS_STORAGE_KEY, JSON.stringify(programs))
 }

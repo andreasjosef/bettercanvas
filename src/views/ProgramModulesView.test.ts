@@ -137,6 +137,13 @@ describe('ProgramModulesView', () => {
     ).toBe('585')
   })
 
+  it('falls back to a generic heading when the Program is not in the stored list', async () => {
+    fetchMock.mockResolvedValue(modulesResponse([]))
+    const { wrapper } = await mountAppAtPath('/programs/999/modules')
+
+    expect(wrapper.find('h1').text()).toBe('Modules')
+  })
+
   it('routes Page and Assignment items toward the reading view', async () => {
     fetchMock.mockResolvedValue(modulesResponse(SIX_ITEM_TYPES_FIXTURE))
     const { wrapper, router } = await mountAppAtPath('/programs/585/modules')
