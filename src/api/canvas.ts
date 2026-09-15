@@ -10,6 +10,13 @@ export class CanvasError extends Error {
   }
 }
 
+export class ProxyUnreachableError extends Error {
+  constructor() {
+    super('Canvas proxy returned a non-JSON response')
+    this.name = 'ProxyUnreachableError'
+  }
+}
+
 export interface Course {
   id: number
   name: string
@@ -25,6 +32,10 @@ async function canvasFetch(token: string, proxyPath: string): Promise<Response> 
   })
   if (!response.ok) {
     throw new CanvasError(response.status)
+  }
+  const contentType = response.headers.get('content-type') ?? ''
+  if (!contentType.includes('application/json')) {
+    throw new ProxyUnreachableError()
   }
   return response
 }

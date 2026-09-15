@@ -1,6 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { fetchCourses, parseNextLink } from './canvas.ts'
 
+function htmlSpaFallbackResponse(): Response {
+  return new Response(
+    '<!doctype html><html><body><div id="app"></div></body></html>',
+    { status: 200, headers: { 'content-type': 'text/html' } },
+  )
+}
+
 const UPSTREAM_ORIGIN = 'https://chasacademy.instructure.com'
 
 function jsonResponse(
@@ -80,6 +87,15 @@ describe('fetchCourses', () => {
     await expect(fetchCourses('bad-token')).rejects.toMatchObject({
       name: 'CanvasError',
       status: 401,
+    })
+    expect(fetchMock).toHaveBeenCalledOnce()
+  })
+
+  it('throws ProxyUnreachableError on a 200 non-JSON response (e.g. the SPA fallback when no proxy/rewrite is in front of it, as with plain `vite dev` and no deploy)', async () => {
+    fetchMock.mockResolvedValue(htmlSpaFallbackResponse())
+
+    await expect(fetchCourses('token123')).rejects.toMatchObject({
+      name: 'ProxyUnreachableError',
     })
     expect(fetchMock).toHaveBeenCalledOnce()
   })

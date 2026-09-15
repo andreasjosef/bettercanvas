@@ -92,6 +92,23 @@ describe('canvas proxy handler', () => {
     expect(init.headers).toMatchObject({ authorization: 'Bearer token123' })
   })
 
+  it('never attaches a body to a GET request, even if req.body is a truthy empty object (as vercel dev sends for a bodyless GET)', async () => {
+    fetchMock.mockResolvedValue(new Response('[]', { status: 200 }))
+    await handler(
+      makeReq(
+        'GET',
+        '/api/v1/courses',
+        { authorization: 'Bearer token123' },
+        {},
+      ),
+      res,
+    )
+
+    expect(fetchMock).toHaveBeenCalledOnce()
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit]
+    expect(init.body).toBeUndefined()
+  })
+
   it('forwards the HTTP method, path and body unchanged for non-GET requests', async () => {
     fetchMock.mockResolvedValue(
       new Response('{"id":1}', { status: 201 }),

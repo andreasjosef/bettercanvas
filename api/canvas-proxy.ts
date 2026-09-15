@@ -48,7 +48,8 @@ export default async function handler(
   }
   const init: RequestInit = { method: req.method, headers }
 
-  const body = serializeBody(req.body)
+  const canHaveBody = req.method !== 'GET' && req.method !== 'HEAD'
+  const body = canHaveBody ? serializeBody(req.body) : undefined
   if (body !== undefined) {
     init.body = body
     if (!headers['content-type']) {

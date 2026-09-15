@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { fetchCourses } from '../api/canvas'
+import { fetchCourses, ProxyUnreachableError } from '../api/canvas'
 import { saveToken } from '../token'
 
 const router = useRouter()
@@ -21,9 +21,11 @@ async function connect(): Promise<void> {
     await fetchCourses(trimmed)
     saveToken(trimmed)
     await router.push({ name: 'picker' })
-  } catch {
+  } catch (e) {
     error.value =
-      'Canvas rejected this token. Check that you copied the full token and try again.'
+      e instanceof ProxyUnreachableError
+        ? 'Could not reach the Canvas proxy. Make sure the app is deployed (or running via `vercel dev`) and try again.'
+        : 'Canvas rejected this token. Check that you copied the full token and try again.'
   } finally {
     submitting.value = false
   }
