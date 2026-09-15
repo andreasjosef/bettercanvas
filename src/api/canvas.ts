@@ -52,15 +52,55 @@ async function canvasFetch(token: string, proxyPath: string): Promise<Response> 
 }
 
 export async function fetchCourses(token: string): Promise<Course[]> {
-  const courses: Course[] = []
-  let path: string | null = '/api/v1/courses'
+  return fetchAllPages<Course>(token, '/api/v1/courses')
+}
+
+export interface ModuleItem {
+  id: number
+  type: ModuleItemType
+  title: string
+  page_url?: string
+  html_url?: string
+  external_url?: string
+}
+
+export type ModuleItemType =
+  | 'Page'
+  | 'Assignment'
+  | 'SubHeader'
+  | 'ExternalUrl'
+  | 'Quiz'
+  | 'ExternalTool'
+  | 'File'
+  | 'Discussion'
+
+export interface CourseModule {
+  id: number
+  name: string
+  position: number
+  items?: ModuleItem[]
+}
+
+export async function fetchModules(
+  token: string,
+  courseId: number,
+): Promise<CourseModule[]> {
+  return fetchAllPages<CourseModule>(
+    token,
+    `/api/v1/courses/${courseId}/modules?include[]=items&per_page=100`,
+  )
+}
+
+async function fetchAllPages<T>(token: string, startPath: string): Promise<T[]> {
+  const results: T[] = []
+  let path: string | null = startPath
   while (path) {
     const response = await canvasFetch(token, path)
-    const page = (await response.json()) as Course[]
-    courses.push(...page)
+    const page = (await response.json()) as T[]
+    results.push(...page)
     path = proxyPathFromNextLink(response.headers.get('link'))
   }
-  return courses
+  return results
 }
 
 export interface Assignment {

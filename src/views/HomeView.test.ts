@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { flushPromises } from '@vue/test-utils'
 import { assignmentsResponse, mountAppAtPath } from '../test/appHarness'
 import { savePrograms } from '../programs'
 import { TOKEN_STORAGE_KEY } from '../token'
@@ -78,5 +79,19 @@ describe('HomeView', () => {
     expect(listText).toContain('Programmeringäsning')
     expect(listText).toContain('CodeForGood')
     expect(listText).toContain('Could not load upcoming assignments')
+  })
+
+  it('each Active Program opens its Modules view', async () => {
+    savePrograms([{ courseId: 585, name: 'Programmeringäsning', archived: false }])
+    fetchMock.mockResolvedValue(assignmentsResponse([]))
+    const { wrapper } = await mountAppAtPath('/')
+
+    const rowLink = wrapper.find('ul a[href="/programs/585/modules"]')
+    expect(rowLink.exists()).toBe(true)
+    expect(rowLink.text()).toContain('Programmeringäsning')
+
+    await rowLink.trigger('click')
+    await flushPromises()
+    expect(wrapper.text()).toContain('Modules')
   })
 })
