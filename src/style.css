@@ -1,4 +1,88 @@
+/*
+ * Tailwind entry. The visual design lives entirely in
+ * `src/styles/tokens.css` (semantic design tokens, per issue #8 / spec
+ * decision: components consume Tailwind theme keys, not raw utility
+ * values). The `@theme inline` block below maps those custom properties
+ * into Tailwind's theme namespaces:
+ *
+ *   --color-*  -> colors.*      (bg-bg, text-text, border-border, ...)
+ *   --font-*   -> font-*        (font-heading, font-body, font-mono)
+ *   --text-*   -> text-*        (text-xs ... text-3xl)
+ *   --leading- -> leading-*     (leading-tight, leading-normal, leading-relaxed)
+ *   --space-*  -> spacing.*     (p-1 ... p-7, m-*, gap-*, ...)
+ *   --radius-* -> radius        (rounded-sm, rounded-md, rounded-lg)
+ *
+ * `inline` makes utilities reference the token variable itself
+ * (e.g. `.bg-bg { background-color: var(--color-bg) }`) so a token change
+ * in tokens.css needs no Tailwind rebuild contract beyond CSS itself.
+ *
+ * LOAD-BEARING ORDER: `@import 'tailwindcss'` must stay BEFORE
+ * `@import './styles/tokens.css'`. Tailwind emits the self-referential
+ * `--color-bg: var(--color-bg)` etc. into :root, and tokens.css's real
+ * values win only because its :root block cascades after them. Reordering
+ * the imports makes every mapped token a circular reference (invalid).
+ */
+@import 'tailwindcss';
 @import './styles/tokens.css';
+
+@theme inline {
+  --color-bg: var(--color-bg);
+  --color-surface: var(--color-surface);
+  --color-surface-alt: var(--color-surface-alt);
+  --color-border: var(--color-border);
+  --color-text: var(--color-text);
+  --color-text-muted: var(--color-text-muted);
+  --color-heading: var(--color-heading);
+  --color-accent: var(--color-accent);
+  --color-accent-text: var(--color-accent-text);
+  --color-danger: var(--color-danger);
+  --color-success: var(--color-success);
+  --color-focus-ring: var(--color-focus-ring);
+  --color-code-bg: var(--code-bg);
+  --color-code-border: var(--code-border);
+  --color-code-text: var(--code-text);
+  --color-code-comment: var(--code-comment);
+  --color-code-keyword: var(--code-keyword);
+  --color-code-string: var(--code-string);
+  --color-code-function: var(--code-function);
+  --color-code-number: var(--code-number);
+  --color-code-punct: var(--code-punct);
+
+  --font-heading: var(--font-heading);
+  --font-body: var(--font-body);
+  --font-mono: var(--font-mono);
+
+  --text-xs: var(--text-xs);
+  --text-xs--line-height: var(--leading-normal);
+  --text-sm: var(--text-sm);
+  --text-sm--line-height: var(--leading-normal);
+  --text-base: var(--text-base);
+  --text-base--line-height: var(--leading-normal);
+  --text-lg: var(--text-lg);
+  --text-lg--line-height: var(--leading-tight);
+  --text-xl: var(--text-xl);
+  --text-xl--line-height: var(--leading-tight);
+  --text-2xl: var(--text-2xl);
+  --text-2xl--line-height: var(--leading-tight);
+  --text-3xl: var(--text-3xl);
+  --text-3xl--line-height: var(--leading-tight);
+
+  --leading-tight: var(--leading-tight);
+  --leading-normal: var(--leading-normal);
+  --leading-relaxed: var(--leading-relaxed);
+
+  --spacing-1: var(--space-1);
+  --spacing-2: var(--space-2);
+  --spacing-3: var(--space-3);
+  --spacing-4: var(--space-4);
+  --spacing-5: var(--space-5);
+  --spacing-6: var(--space-6);
+  --spacing-7: var(--space-7);
+
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+}
 
 * {
   box-sizing: border-box;
