@@ -1,4 +1,5 @@
-import { flushPromises, mount } from '@vue/test-utils'
+import { flushPromises, mount, type DOMWrapper } from '@vue/test-utils'
+import { expect } from 'vitest'
 import App from '../App.vue'
 import { createAppRouter } from '../router'
 
@@ -59,4 +60,23 @@ export async function mountAppAtPath(path: string) {
   const wrapper = mount(App, { global: { plugins: [router] } })
   await flushPromises()
   return { wrapper, router }
+}
+
+export function expectPlainListRows(
+  wrapper: { findAll(selector: string): DOMWrapper<Element>[] },
+  selector: string,
+  count: number,
+): void {
+  const rows = wrapper.findAll(selector)
+  expect(rows).toHaveLength(count)
+  for (const row of rows) {
+    const link = row.find('a')
+    expect(link.exists()).toBe(true)
+    const linkClasses = link.classes()
+    expect(linkClasses).not.toContain('rounded-md')
+    expect(linkClasses).not.toContain('bg-surface')
+    expect(linkClasses).not.toContain('p-3')
+    expect(linkClasses).toContain('border-b')
+    expect(linkClasses).toContain('py-2')
+  }
 }

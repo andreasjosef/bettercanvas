@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
-import { mountAppAtPath } from '../test/appHarness'
+import { expectPlainListRows, mountAppAtPath } from '../test/appHarness'
 import { savePrograms } from '../programs'
 import { TOKEN_STORAGE_KEY } from '../token'
 
@@ -46,17 +46,7 @@ describe('PreviousLecturesView', () => {
     ])
     const { wrapper } = await mountAppAtPath('/previous-lectures')
 
-    const rows = wrapper.findAll('ul > li')
-    expect(rows).toHaveLength(2)
-    for (const row of rows) {
-      expect(row.classes()).not.toContain('rounded-md')
-      expect(row.classes()).not.toContain('bg-surface')
-      expect(row.classes()).not.toContain('border')
-      const link = row.find('a')
-      expect(link.exists()).toBe(true)
-      expect(link.classes()).toContain('border-b')
-      expect(link.classes()).toContain('py-2')
-    }
+    expectPlainListRows(wrapper, 'ul > li', 2)
   })
 
   it('an Archived Program opens its Modules view the same as an Active one', async () => {

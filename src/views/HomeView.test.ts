@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
-import { assignmentsResponse, mountAppAtPath } from '../test/appHarness'
+import { assignmentsResponse, expectPlainListRows, mountAppAtPath } from '../test/appHarness'
 import { savePrograms } from '../programs'
 import { TOKEN_STORAGE_KEY } from '../token'
 
@@ -100,17 +100,7 @@ describe('HomeView', () => {
     fetchMock.mockResolvedValue(assignmentsResponse([]))
     const { wrapper } = await mountAppAtPath('/')
 
-    const rows = wrapper.findAll('ul > li')
-    expect(rows).toHaveLength(2)
-    for (const row of rows) {
-      expect(row.classes()).not.toContain('rounded-md')
-      expect(row.classes()).not.toContain('bg-surface')
-      expect(row.classes()).not.toContain('border')
-      const link = row.find('a')
-      expect(link.exists()).toBe(true)
-      expect(link.classes()).toContain('border-b')
-      expect(link.classes()).toContain('py-2')
-    }
+    expectPlainListRows(wrapper, 'ul > li', 2)
   })
 
   it('each Active Program opens its Modules view', async () => {
