@@ -16,7 +16,7 @@ describe('App routing', () => {
   it.each([
     ['/', 'Home'],
     ['/connect', 'Connect'],
-    ['/picker', 'Picker'],
+    ['/picker', 'Pick your Programs'],
     ['/programs/p1/modules', 'Modules'],
     ['/programs/p1/assignments', 'Assignments'],
     ['/programs/p1/read/item1', 'Reading'],

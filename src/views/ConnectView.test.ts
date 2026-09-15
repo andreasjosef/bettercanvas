@@ -40,16 +40,15 @@ describe('ConnectView', () => {
   })
 
   it('on success: verifies via proxy, persists token, navigates onward', async () => {
-    fetchMock.mockResolvedValue(coursesResponse())
+    fetchMock.mockImplementation(() => coursesResponse())
     const { wrapper, router } = await mountConnect()
 
     await submitToken(wrapper)
 
-    expect(fetchMock).toHaveBeenCalledOnce()
-    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit]
-    expect(url).toBe('/api/v1/courses')
-    expect(url).not.toContain('chasacademy.instructure.com')
-    expect(init.headers).toMatchObject({ Authorization: 'Bearer token123' })
+    const calls = fetchMock.mock.calls as [string, RequestInit][]
+    expect(calls.map(([url]) => url)).toEqual(['/api/v1/courses', '/api/v1/courses'])
+    expect(calls[0]![0]).not.toContain('chasacademy.instructure.com')
+    expect(calls[0]![1].headers).toMatchObject({ Authorization: 'Bearer token123' })
     expect(localStorage.getItem(TOKEN_STORAGE_KEY)).toBe('token123')
     expect(router.currentRoute.value.name).toBe('picker')
   })
