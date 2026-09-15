@@ -18,7 +18,7 @@ describe('PreviousLecturesView', () => {
     vi.unstubAllGlobals()
   })
 
-  it('with a mixed Active/Archived fixture: lists only Archived Programs and fetches nothing', async () => {
+  it('with a mixed Active/Archived fixture: only Archived Programs render and are navigable', async () => {
     savePrograms([
       { courseId: 585, name: 'Programmeringäsning', archived: false },
       { courseId: 612, name: 'Administration Materials Bank', archived: true },
@@ -31,6 +31,12 @@ describe('PreviousLecturesView', () => {
     expect(listText).toContain('Administration Materials Bank')
     expect(listText).toContain('Game Design Fall 2025')
     expect(listText).not.toContain('Programmeringäsning')
+    expect(wrapper.findAll('ul a')).toHaveLength(2)
+
+    const archivedLink = wrapper.find('ul a[href="/programs/640/modules"]')
+    await archivedLink.trigger('click')
+    await flushPromises()
+    expect(wrapper.text()).toContain('Modules')
   })
 
   it('an Archived Program opens its Modules view the same as an Active one', async () => {

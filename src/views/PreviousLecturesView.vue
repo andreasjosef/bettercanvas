@@ -1,13 +1,14 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import { loadPrograms } from '../programs'
 import { loadToken } from '../token'
 
 const router = useRouter()
-const archivedPrograms = computed(() =>
+const archivedPrograms = ref(
   loadPrograms().filter((program) => program.archived),
 )
+const hasArchivedPrograms = computed(() => archivedPrograms.value.length > 0)
 
 onMounted(async () => {
   if (!loadToken()) {
@@ -25,7 +26,7 @@ onMounted(async () => {
     >
       Home
     </RouterLink>
-    <p v-if="archivedPrograms.length === 0" class="m-0 text-text-muted">
+    <p v-if="!hasArchivedPrograms" class="m-0 text-text-muted">
       No Archived Programs.
     </p>
     <ul v-else class="m-0 w-full max-w-2xl list-none p-0 flex flex-col gap-3">
