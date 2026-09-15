@@ -4,6 +4,8 @@
     { "source": "/api/v1/:path*", "destination": "/api/canvas-proxy" },
     { "source": "/connect", "destination": "/index.html" },
     { "source": "/picker", "destination": "/index.html" },
+    { "source": "/settings", "destination": "/index.html" },
+    { "source": "/previous-lectures", "destination": "/index.html" },
     { "source": "/programs/:path*", "destination": "/index.html" }
   ]
 }
