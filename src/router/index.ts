@@ -6,11 +6,13 @@ import HomeView from '../views/HomeView.vue'
 import ProgramModulesView from '../views/ProgramModulesView.vue'
 import ProgramAssignmentsView from '../views/ProgramAssignmentsView.vue'
 import ReadingView from '../views/ReadingView.vue'
+import SettingsView from '../views/SettingsView.vue'
 
 export const routes = [
   { path: '/', name: 'home', component: HomeView },
   { path: '/connect', name: 'connect', component: ConnectView },
   { path: '/picker', name: 'picker', component: PickerView },
+  { path: '/settings', name: 'settings', component: SettingsView },
   {
     path: '/programs/:programId/modules',
     name: 'program-modules',

@@ -81,6 +81,16 @@ describe('HomeView', () => {
     expect(listText).toContain('Could not load upcoming assignments')
   })
 
+  it('links to the Settings/Manage Programs route', async () => {
+    savePrograms([{ courseId: 585, name: 'Programmeringäsning', archived: false }])
+    fetchMock.mockResolvedValue(assignmentsResponse([]))
+    const { wrapper } = await mountAppAtPath('/')
+
+    const settingsLink = wrapper.find('a[href="/settings"]')
+    expect(settingsLink.exists()).toBe(true)
+    expect(settingsLink.text()).toContain('Manage Programs')
+  })
+
   it('each Active Program opens its Modules view', async () => {
     savePrograms([{ courseId: 585, name: 'Programmeringäsning', archived: false }])
     fetchMock.mockResolvedValue(assignmentsResponse([]))
