@@ -1,6 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 
-const UPSTREAM_BASE_URL = 'https://chasacademy.instructure.com'
+export const UPSTREAM_BASE_URL = 'https://chasacademy.instructure.com'
+
+const RELAYED_RESPONSE_HEADERS = ['content-type', 'link']
 
 const CORS_HEADERS: Record<string, string> = {
   'Access-Control-Allow-Origin': '*',
@@ -37,15 +39,44 @@ export default async function handler(
     return
   }
 
-  const upstream = await fetch(`${UPSTREAM_BASE_URL}${url.pathname}${url.search}`, {
-    method: req.method,
-    headers: { authorization, accept: req.headers.accept ?? 'application/json' },
-  })
+  const headers: Record<string, string> = {
+    authorization,
+    accept: req.headers.accept ?? 'application/json',
+  }
+  if (req.headers['content-type']) {
+    headers['content-type'] = req.headers['content-type']
+  }
+  const init: RequestInit = { method: req.method, headers }
+
+  const body = serializeBody(req.body)
+  if (body !== undefined) {
+    init.body = body
+    if (!headers['content-type']) {
+      headers['content-type'] = 'application/json'
+    }
+  }
+
+  const upstream = await fetch(
+    `${UPSTREAM_BASE_URL}${url.pathname}${url.search}`,
+    init,
+  )
 
   res.status(upstream.status)
-  const contentType = upstream.headers.get('content-type')
-  if (contentType) {
-    res.setHeader('Content-Type', contentType)
+  for (const name of RELAYED_RESPONSE_HEADERS) {
+    const value = upstream.headers.get(name)
+    if (value) {
+      res.setHeader(name, value)
+    }
   }
   res.send(Buffer.from(await upstream.arrayBuffer()))
+}
+
+function serializeBody(body: unknown): string | undefined {
+  if (body === undefined || body === null) {
+    return undefined
+  }
+  if (typeof body === 'string') {
+    return body
+  }
+  return JSON.stringify(body)
 }

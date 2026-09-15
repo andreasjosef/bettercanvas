@@ -1,9 +1,7 @@
 // @vitest-environment node
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import handler from './canvas-proxy.ts'
-
-const UPSTREAM = 'https://chasacademy.instructure.com'
+import handler, { UPSTREAM_BASE_URL as UPSTREAM } from './canvas-proxy.ts'
 
 interface CapturedResponse {
   statusCode?: number
@@ -16,8 +14,9 @@ function makeReq(
   method: string,
   url: string,
   headers: Record<string, string> = {},
+  body?: unknown,
 ): VercelRequest {
-  return { method, url, headers } as unknown as VercelRequest
+  return { method, url, headers, body } as unknown as VercelRequest
 }
 
 function makeRes(): { res: VercelResponse; captured: CapturedResponse } {
@@ -93,19 +92,31 @@ describe('canvas proxy handler', () => {
     expect(init.headers).toMatchObject({ authorization: 'Bearer token123' })
   })
 
-  it('forwards the HTTP method unchanged for non-GET requests', async () => {
+  it('forwards the HTTP method, path and body unchanged for non-GET requests', async () => {
     fetchMock.mockResolvedValue(
       new Response('{"id":1}', { status: 201 }),
     )
     await handler(
-      makeReq('POST', '/api/v1/courses/1/enrollments', {
-        authorization: 'Bearer token123',
-      }),
+      makeReq(
+        'POST',
+        '/api/v1/courses/1/enrollments',
+        {
+          authorization: 'Bearer token123',
+          'content-type': 'application/json',
+        },
+        { user_id: 123 },
+      ),
       res,
     )
 
-    const init = fetchMock.mock.calls[0][1] as RequestInit
+    const [calledUrl, init] = fetchMock.mock.calls[0] as [string, RequestInit]
+    expect(calledUrl).toBe(`${UPSTREAM}/api/v1/courses/1/enrollments`)
     expect(init.method).toBe('POST')
+    expect(init.headers).toMatchObject({
+      authorization: 'Bearer token123',
+      'content-type': 'application/json',
+    })
+    expect(init.body).toBe('{"user_id":123}')
   })
 
   it('relays upstream status, body and content-type, with CORS headers set', async () => {
@@ -143,6 +154,23 @@ describe('canvas proxy handler', () => {
 
     expect(captured.statusCode).toBe(401)
     expect(captured.body).toEqual(Buffer.from('Invalid token'))
+  })
+
+  it('relays the upstream Link header for pagination', async () => {
+    fetchMock.mockResolvedValue(
+      new Response('[]', {
+        status: 200,
+        headers: {
+          link: '<https://chasacademy.instructure.com/api/v1/courses?page=2>; rel="next"',
+        },
+      }),
+    )
+    await handler(
+      makeReq('GET', '/api/v1/courses', { authorization: 'Bearer t' }),
+      res,
+    )
+
+    expect(captured.headers['link']).toContain('rel="next"')
   })
 
   it('answers CORS preflight (OPTIONS) itself without proxying', async () => {
