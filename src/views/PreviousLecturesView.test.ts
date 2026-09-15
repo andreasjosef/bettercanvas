@@ -66,7 +66,8 @@ describe('PreviousLecturesView', () => {
     savePrograms([{ courseId: 612, name: 'Administration Materials Bank', archived: true }])
     const { wrapper } = await mountAppAtPath('/previous-lectures')
 
-    const homeLink = wrapper.find('a[href="/"]')
+    // Scope to the view's main: the app shell's wordmark also links to /.
+    const homeLink = wrapper.find('main a[href="/"]')
     expect(homeLink.exists()).toBe(true)
   })
 })

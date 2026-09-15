@@ -86,7 +86,8 @@ describe('HomeView', () => {
     fetchMock.mockResolvedValue(assignmentsResponse([]))
     const { wrapper } = await mountAppAtPath('/')
 
-    const settingsLink = wrapper.find('a[href="/settings"]')
+    // Scope to the view's main: the app shell's sidebar also links to /settings.
+    const settingsLink = wrapper.find('main a[href="/settings"]')
     expect(settingsLink.exists()).toBe(true)
     expect(settingsLink.text()).toContain('Manage Programs')
   })
