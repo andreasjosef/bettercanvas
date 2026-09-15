@@ -82,6 +82,8 @@
   --radius-sm: var(--radius-sm);
   --radius-md: var(--radius-md);
   --radius-lg: var(--radius-lg);
+
+  --width-drawer: var(--drawer-width);
 }
 
 * {

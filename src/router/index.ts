@@ -11,8 +11,18 @@ import PreviousLecturesView from '../views/PreviousLecturesView.vue'
 
 export const routes = [
   { path: '/', name: 'home', component: HomeView },
-  { path: '/connect', name: 'connect', component: ConnectView },
-  { path: '/picker', name: 'picker', component: PickerView },
+  {
+    path: '/connect',
+    name: 'connect',
+    component: ConnectView,
+    meta: { bare: true },
+  },
+  {
+    path: '/picker',
+    name: 'picker',
+    component: PickerView,
+    meta: { bare: true },
+  },
   { path: '/settings', name: 'settings', component: SettingsView },
   {
     path: '/previous-lectures',
