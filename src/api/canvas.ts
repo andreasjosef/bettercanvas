@@ -64,7 +64,7 @@ export async function fetchNextDueAssignment(
 ): Promise<Assignment | null> {
   const response = await canvasFetch(
     token,
-    `/api/v1/courses/${courseId}/assignments?bucket=future&order_by=due_date&per_page=1`,
+    `/api/v1/courses/${courseId}/assignments?bucket=future&order_by=due_at&per_page=1`,
   )
   const page = (await response.json()) as Assignment[]
   return page[0] ?? null

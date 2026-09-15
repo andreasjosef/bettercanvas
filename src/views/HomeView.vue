@@ -5,12 +5,32 @@ import { fetchNextDueAssignment, type Assignment } from '../api/canvas'
 import { loadPrograms } from '../programs'
 import { loadToken } from '../token'
 
+interface ProgramRow {
+  courseId: number
+  name: string
+  failed: boolean
+  nextDueName: string | null
+  dueAt: string | null
+}
+
 const router = useRouter()
 const loading = ref(true)
 const activePrograms = ref(loadPrograms().filter((program) => !program.archived))
 const nextDueByProgram = ref<Record<number, Assignment | null>>({})
 const failedProgramIds = ref<ReadonlySet<number>>(new Set())
 const hasPrograms = computed(() => activePrograms.value.length > 0)
+const programRows = computed<ProgramRow[]>(() =>
+  activePrograms.value.map((program) => {
+    const nextDue = nextDueByProgram.value[program.courseId] ?? null
+    return {
+      courseId: program.courseId,
+      name: program.name,
+      failed: failedProgramIds.value.has(program.courseId),
+      nextDueName: nextDue?.name ?? null,
+      dueAt: nextDue?.due_at ?? null,
+    }
+  }),
+)
 
 function formatDueDate(iso: string): string {
   return new Date(iso).toLocaleString('en-GB', {
@@ -68,29 +88,22 @@ onMounted(async () => {
     </p>
     <ul v-else class="m-0 w-full max-w-2xl list-none p-0 flex flex-col gap-3">
       <li
-        v-for="program in activePrograms"
-        :key="program.courseId"
+        v-for="row in programRows"
+        :key="row.courseId"
         class="border border-border rounded-md bg-surface p-3 flex flex-col gap-1 text-left"
       >
-        <span class="font-heading text-heading text-lg">{{ program.name }}</span>
-        <span
-          v-if="failedProgramIds.has(program.courseId)"
-          class="text-sm text-danger"
-        >
+        <span class="font-heading text-heading text-lg">{{ row.name }}</span>
+        <span v-if="row.failed" class="text-sm text-danger">
           Could not load upcoming assignments.
         </span>
         <span
-          v-else-if="nextDueByProgram[program.courseId]?.due_at"
+          v-else-if="row.nextDueName && row.dueAt"
           class="text-sm text-text-muted"
         >
-          Next due: {{ nextDueByProgram[program.courseId]!.name }} —
-          {{ formatDueDate(nextDueByProgram[program.courseId]!.due_at!) }}
+          Next due: {{ row.nextDueName }} — {{ formatDueDate(row.dueAt) }}
         </span>
-        <span
-          v-else-if="nextDueByProgram[program.courseId]"
-          class="text-sm text-text-muted"
-        >
-          Next due: {{ nextDueByProgram[program.courseId]!.name }}
+        <span v-else-if="row.nextDueName" class="text-sm text-text-muted">
+          Next due: {{ row.nextDueName }}
         </span>
         <span v-else class="text-sm text-text-muted">No upcoming assignments.</span>
       </li>

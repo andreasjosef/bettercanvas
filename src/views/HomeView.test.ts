@@ -32,7 +32,7 @@ describe('HomeView', () => {
     expect(fetchMock).toHaveBeenCalledOnce()
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit]
     expect(url).toBe(
-      '/api/v1/courses/585/assignments?bucket=future&order_by=due_date&per_page=1',
+      '/api/v1/courses/585/assignments?bucket=future&order_by=due_at&per_page=1',
     )
     expect(init.headers).toMatchObject({ Authorization: 'Bearer token123' })
 
