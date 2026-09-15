@@ -39,6 +39,26 @@ describe('PreviousLecturesView', () => {
     expect(wrapper.text()).toContain('Modules')
   })
 
+  it('renders Archived Programs as plain divider-separated rows, not cards', async () => {
+    savePrograms([
+      { courseId: 612, name: 'Administration Materials Bank', archived: true },
+      { courseId: 640, name: 'Game Design Fall 2025', archived: true },
+    ])
+    const { wrapper } = await mountAppAtPath('/previous-lectures')
+
+    const rows = wrapper.findAll('ul > li')
+    expect(rows).toHaveLength(2)
+    for (const row of rows) {
+      expect(row.classes()).not.toContain('rounded-md')
+      expect(row.classes()).not.toContain('bg-surface')
+      expect(row.classes()).not.toContain('border')
+      const link = row.find('a')
+      expect(link.exists()).toBe(true)
+      expect(link.classes()).toContain('border-b')
+      expect(link.classes()).toContain('py-2')
+    }
+  })
+
   it('an Archived Program opens its Modules view the same as an Active one', async () => {
     savePrograms([
       { courseId: 640, name: 'Game Design Fall 2025', archived: true },

@@ -98,30 +98,26 @@ onMounted(async () => {
         Pick your Programs
       </RouterLink>
     </p>
-    <ul v-else class="m-0 w-full max-w-2xl list-none p-0 flex flex-col gap-3">
-      <li
-        v-for="row in programRows"
-        :key="row.courseId"
-        class="border border-border rounded-md bg-surface p-3 flex flex-col gap-1 text-left"
-      >
+    <ul v-else class="m-0 w-full max-w-2xl list-none p-0 flex flex-col">
+      <li v-for="row in programRows" :key="row.courseId">
         <RouterLink
           :to="{ name: 'program-modules', params: { programId: String(row.courseId) } }"
-          class="no-underline text-inherit flex flex-col gap-1"
+          class="block py-2 border-b border-border no-underline text-inherit text-left"
         >
-          <span class="font-heading text-heading text-lg">{{ row.name }}</span>
-          <span v-if="row.failed" class="text-sm text-danger">
+          <span class="block font-heading text-heading text-lg">{{ row.name }}</span>
+          <span v-if="row.failed" class="block text-sm text-danger">
             Could not load upcoming assignments.
           </span>
           <span
             v-else-if="row.nextDueName && row.dueAt"
-            class="text-sm text-text-muted"
+            class="block text-sm text-text-muted"
           >
             Next due: {{ row.nextDueName }} — {{ formatDueDate(row.dueAt) }}
           </span>
-          <span v-else-if="row.nextDueName" class="text-sm text-text-muted">
+          <span v-else-if="row.nextDueName" class="block text-sm text-text-muted">
             Next due: {{ row.nextDueName }}
           </span>
-          <span v-else class="text-sm text-text-muted">No upcoming assignments.</span>
+          <span v-else class="block text-sm text-text-muted">No upcoming assignments.</span>
         </RouterLink>
       </li>
     </ul>

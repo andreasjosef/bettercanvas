@@ -29,15 +29,11 @@ onMounted(async () => {
     <p v-if="!hasArchivedPrograms" class="m-0 text-text-muted">
       No Archived Programs.
     </p>
-    <ul v-else class="m-0 w-full max-w-2xl list-none p-0 flex flex-col gap-3">
-      <li
-        v-for="program in archivedPrograms"
-        :key="program.courseId"
-        class="border border-border rounded-md bg-surface p-3 text-left"
-      >
+    <ul v-else class="m-0 w-full max-w-2xl list-none p-0 flex flex-col">
+      <li v-for="program in archivedPrograms" :key="program.courseId">
         <RouterLink
           :to="{ name: 'program-modules', params: { programId: String(program.courseId) } }"
-          class="no-underline text-inherit font-heading text-heading text-lg"
+          class="block py-2 border-b border-border no-underline text-inherit text-left font-heading text-heading text-lg"
         >
           {{ program.name }}
         </RouterLink>

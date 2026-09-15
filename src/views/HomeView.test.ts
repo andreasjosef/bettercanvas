@@ -92,6 +92,27 @@ describe('HomeView', () => {
     expect(settingsLink.text()).toContain('Manage Programs')
   })
 
+  it('renders Active Programs as plain divider-separated rows, not cards', async () => {
+    savePrograms([
+      { courseId: 585, name: 'Programmeringäsning', archived: false },
+      { courseId: 619, name: 'CodeForGood', archived: false },
+    ])
+    fetchMock.mockResolvedValue(assignmentsResponse([]))
+    const { wrapper } = await mountAppAtPath('/')
+
+    const rows = wrapper.findAll('ul > li')
+    expect(rows).toHaveLength(2)
+    for (const row of rows) {
+      expect(row.classes()).not.toContain('rounded-md')
+      expect(row.classes()).not.toContain('bg-surface')
+      expect(row.classes()).not.toContain('border')
+      const link = row.find('a')
+      expect(link.exists()).toBe(true)
+      expect(link.classes()).toContain('border-b')
+      expect(link.classes()).toContain('py-2')
+    }
+  })
+
   it('each Active Program opens its Modules view', async () => {
     savePrograms([{ courseId: 585, name: 'Programmeringäsning', archived: false }])
     fetchMock.mockResolvedValue(assignmentsResponse([]))
