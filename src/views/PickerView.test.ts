@@ -1,32 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { flushPromises, mount } from '@vue/test-utils'
-import App from '../App.vue'
-import { createAppRouter } from '../router'
+import { flushPromises } from '@vue/test-utils'
+import { coursesResponse, mountAppAtPath } from '../test/appHarness'
 import { PROGRAMS_STORAGE_KEY } from '../programs'
 import { TOKEN_STORAGE_KEY } from '../token'
 
-interface FakeCourse {
-  id: number
-  name: string
-}
-
-function coursesResponse(courses: FakeCourse[], link?: string): Response {
-  const headers: Record<string, string> = { 'content-type': 'application/json' }
-  if (link) headers.link = link
-  return new Response(JSON.stringify(courses), { status: 200, headers })
-}
-
-async function mountPicker() {
-  const router = createAppRouter()
-  await router.push('/picker')
-  await router.isReady()
-  const wrapper = mount(App, { global: { plugins: [router] } })
-  await flushPromises()
-  return { wrapper, router }
-}
-
-async function confirmSelection(wrapper: ReturnType<typeof mount>) {
-  const button = wrapper.findAll('button').find((b) => b.text() === 'Confirm')
+async function confirmSelection(
+  wrapper: Awaited<ReturnType<typeof mountAppAtPath>>['wrapper'],
+) {
+  const button = wrapper
+    .findAll('button')
+    .find((b) => b.text() === 'Confirm')
   expect(button).toBeDefined()
   await button?.trigger('submit')
   await flushPromises()
@@ -53,7 +36,7 @@ describe('PickerView', () => {
         { id: 612, name: 'Administration Materials Bank' },
       ]),
     )
-    const { wrapper } = await mountPicker()
+    const { wrapper } = await mountAppAtPath('/picker')
 
     expect(fetchMock).toHaveBeenCalledOnce()
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit]
@@ -72,7 +55,7 @@ describe('PickerView', () => {
         { id: 612, name: 'Administration Materials Bank' },
       ]),
     )
-    const { wrapper, router } = await mountPicker()
+    const { wrapper, router } = await mountAppAtPath('/picker')
 
     const checkboxes = wrapper.findAll('input[type="checkbox"]')
     expect(checkboxes).toHaveLength(2)
@@ -91,7 +74,7 @@ describe('PickerView', () => {
   it('zero selection is accepted: persists no Programs and reaches a working empty app', async () => {
     localStorage.setItem(TOKEN_STORAGE_KEY, 'token123')
     fetchMock.mockResolvedValue(coursesResponse([{ id: 585, name: 'Programmeringäsning' }]))
-    const { wrapper, router } = await mountPicker()
+    const { wrapper, router } = await mountAppAtPath('/picker')
 
     expect(wrapper.findAll('input[type="checkbox"]')).toHaveLength(1)
     await confirmSelection(wrapper)
@@ -107,7 +90,7 @@ describe('PickerView', () => {
   it('on a failed Courses fetch: shows an inline error and persists nothing', async () => {
     localStorage.setItem(TOKEN_STORAGE_KEY, 'token123')
     fetchMock.mockResolvedValue(new Response('Invalid token', { status: 401 }))
-    const { wrapper, router } = await mountPicker()
+    const { wrapper, router } = await mountAppAtPath('/picker')
 
     const alert = wrapper.find('[role="alert"]')
     expect(alert.exists()).toBe(true)
@@ -117,7 +100,7 @@ describe('PickerView', () => {
   })
 
   it('with no stored token: sends the user back to connect instead of fetching', async () => {
-    const { router } = await mountPicker()
+    const { router } = await mountAppAtPath('/picker')
     expect(fetchMock).not.toHaveBeenCalled()
     expect(router.currentRoute.value.name).toBe('connect')
   })

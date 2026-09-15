@@ -37,7 +37,7 @@ function toggle(courseId: number, checked: boolean): void {
   selectedCourseIds.value = next
 }
 
-function confirm(): void {
+function confirmSelection(): void {
   savePrograms(
     courses.value
       .filter((course) => selectedCourseIds.value.has(course.id))
@@ -58,7 +58,7 @@ function confirm(): void {
       {{ error }}
     </p>
     <p v-else-if="loading" class="m-0 text-text-muted">Loading…</p>
-    <form v-else class="flex flex-col items-center gap-2 max-w-sm w-full" @submit.prevent="confirm">
+    <form v-else class="flex flex-col items-center gap-2 max-w-sm w-full" @submit.prevent="confirmSelection">
       <p v-if="courses.length === 0" class="m-0 text-text-muted">
         No Courses found on your Canvas account.
       </p>
