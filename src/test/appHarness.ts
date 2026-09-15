@@ -19,11 +19,13 @@ export function coursesResponse(courses: FakeCourse[], link?: string): Response 
   return new Response(JSON.stringify(courses), { status: 200, headers })
 }
 
-export function assignmentsResponse(assignments: FakeAssignment[]): Response {
-  return new Response(JSON.stringify(assignments), {
-    status: 200,
-    headers: { 'content-type': 'application/json' },
-  })
+export function assignmentsResponse(
+  assignments: FakeAssignment[],
+  link?: string,
+): Response {
+  const headers: Record<string, string> = { 'content-type': 'application/json' }
+  if (link) headers.link = link
+  return new Response(JSON.stringify(assignments), { status: 200, headers })
 }
 
 export interface FakeModuleItem {
