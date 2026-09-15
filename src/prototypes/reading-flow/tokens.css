@@ -1,0 +1,174 @@
+/*
+ * PROTOTYPE token set — this is the actual thing issue #5 asks to decide.
+ * Semantic names on the left are what should become Tailwind theme keys
+ * (`--color-*` -> `colors.*`, `--font-*`/`--text-*` -> `fontFamily`/
+ * `fontSize`, `--space-*` -> `spacing`) once a variant wins. Each
+ * `[data-variant]` block below is a complete, self-contained value set —
+ * that's what makes the three variants comparable as whole design systems,
+ * not just color swaps.
+ */
+
+[data-variant] {
+  --radius-sm: 2px;
+  --radius-md: 4px;
+  --radius-lg: 6px;
+}
+
+/* ---------- Variant A: "Quiet Reader" v2 ----------
+ * Direction the user picked: A's drawer-nav/single-column reading layout,
+ * revised per live feedback —
+ *  - sans throughout (serif headings didn't land)
+ *  - dark-first: this *is* the default now, not a prefers-color-scheme
+ *    fallback, ported from the user's own Alacritty "Warm Dark" Gruvbox
+ *    scheme (~/.config/alacritty/alacritty.toml)
+ *  - type scale + spacing scale both ~1.2x the original values, so the
+ *    UI reads like it's sitting at the user's usual 120% zoom by default
+ *    instead of relying on the browser's zoom
+ *  - sharper corners (radius scale above, shared across variants)
+ */
+[data-variant='a'] {
+  --color-bg: #131311;
+  --color-surface: #1c1a17;
+  --color-surface-alt: #201e1a;
+  --color-border: #33302a;
+  --color-text: #ebdbb2;
+  --color-text-muted: #928374;
+  --color-heading: #fbf1c7;
+  --color-accent: #d79921;
+  --color-accent-text: #131311;
+  --color-danger: #ea6962;
+  --color-success: #a9b665;
+  --color-focus-ring: #d79921;
+
+  --font-heading: -apple-system, 'Segoe UI', Inter, Roboto, sans-serif;
+  --font-body: -apple-system, 'Segoe UI', Inter, Roboto, sans-serif;
+  --font-mono: 'JetBrainsMono Nerd Font', 'JetBrains Mono', ui-monospace, Menlo, monospace;
+
+  --text-xs: 16px;
+  --text-sm: 18px;
+  --text-base: 22px;
+  --text-lg: 26px;
+  --text-xl: 31px;
+  --text-2xl: 38px;
+  --text-3xl: 50px;
+  --leading-tight: 1.2;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.7;
+
+  --space-1: 5px;
+  --space-2: 10px;
+  --space-3: 17px;
+  --space-4: 24px;
+  --space-5: 34px;
+  --space-6: 48px;
+  --space-7: 67px;
+
+  --code-bg: #17150f;
+  --code-border: #33302a;
+  --code-text: #ebdbb2;
+  --code-comment: #928374;
+  --code-keyword: #d3869b;
+  --code-string: #a9b665;
+  --code-function: #7daea3;
+  --code-number: #d79921;
+  --code-punct: #928374;
+}
+
+/* ---------- Variant B: "Command Dashboard" (dense, dark, mono-leaning) ---------- */
+[data-variant='b'] {
+  --color-bg: #12131a;
+  --color-surface: #191b24;
+  --color-surface-alt: #0d0e13;
+  --color-border: #2a2d3a;
+  --color-text: #c7cad4;
+  --color-text-muted: #7d8194;
+  --color-heading: #f2f3f7;
+  --color-accent: #5eead4;
+  --color-accent-text: #0d0e13;
+  --color-danger: #f87171;
+  --color-success: #5eead4;
+  --color-focus-ring: #5eead4;
+
+  --font-heading:
+    'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-body: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', monospace;
+
+  --text-xs: 12px;
+  --text-sm: 13px;
+  --text-base: 14px;
+  --text-lg: 16px;
+  --text-xl: 20px;
+  --text-2xl: 24px;
+  --text-3xl: 30px;
+  --leading-tight: 1.15;
+  --leading-normal: 1.4;
+  --leading-relaxed: 1.6;
+
+  --space-1: 3px;
+  --space-2: 6px;
+  --space-3: 10px;
+  --space-4: 14px;
+  --space-5: 20px;
+  --space-6: 28px;
+  --space-7: 40px;
+
+  --code-bg: #0d0e13;
+  --code-border: #2a2d3a;
+  --code-text: #c7cad4;
+  --code-comment: #575b6b;
+  --code-keyword: #c792ea;
+  --code-string: #5eead4;
+  --code-function: #82aaff;
+  --code-number: #f78c6c;
+  --code-punct: #7d8194;
+}
+
+/* ---------- Variant C: "Editorial Digest" (spacious, magazine, light) ---------- */
+[data-variant='c'] {
+  --color-bg: #fffdf9;
+  --color-surface: #ffffff;
+  --color-surface-alt: #f7f2ea;
+  --color-border: #ece5d6;
+  --color-text: #2e2a22;
+  --color-text-muted: #948c78;
+  --color-heading: #1c1912;
+  --color-accent: #c2410c;
+  --color-accent-text: #fffdf9;
+  --color-danger: #b91c1c;
+  --color-success: #15803d;
+  --color-focus-ring: #c2410c;
+
+  --font-heading: 'Fraunces', Georgia, serif;
+  --font-body: system-ui, 'Segoe UI', sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', monospace;
+
+  --text-xs: 13px;
+  --text-sm: 15px;
+  --text-base: 17px;
+  --text-lg: 20px;
+  --text-xl: 28px;
+  --text-2xl: 40px;
+  --text-3xl: 56px;
+  --leading-tight: 1.1;
+  --leading-normal: 1.55;
+  --leading-relaxed: 1.75;
+
+  --space-1: 6px;
+  --space-2: 10px;
+  --space-3: 16px;
+  --space-4: 24px;
+  --space-5: 36px;
+  --space-6: 56px;
+  --space-7: 80px;
+
+  --code-bg: transparent;
+  --code-border: #c2410c;
+  --code-text: #2e2a22;
+  --code-comment: #a39a86;
+  --code-keyword: #c2410c;
+  --code-string: #15803d;
+  --code-function: #1d4ed8;
+  --code-number: #a21caf;
+  --code-punct: #948c78;
+}
