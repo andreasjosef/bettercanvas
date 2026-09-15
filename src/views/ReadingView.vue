@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import {
   fetchAssignmentDescription,
@@ -9,6 +9,8 @@ import {
 } from '../api/canvas'
 import { loadToken } from '../token'
 import { sanitizeCanvasHtml } from '../sanitize'
+import { highlightCodeBlocks } from '../highlight'
+import { applyHighlightTheme, DEFAULT_HIGHLIGHT_THEME } from '../highlightTheme'
 
 const props = defineProps<{ programId: string; itemId: string }>()
 
@@ -19,8 +21,23 @@ const notFound = ref(false)
 const item = ref<ModuleItem | null>(null)
 const moduleName = ref('')
 const rawHtml = ref('')
+const contentEl = ref<HTMLElement | null>(null)
 
 const sanitizedHtml = computed(() => sanitizeCanvasHtml(rawHtml.value))
+
+// Highlight only once the sanitized body is in the DOM, scoped to the
+// reading column — never a global highlightAll() across the page. The
+// theme stylesheet loads with it; unauthenticated visits that redirect
+// away never inject it.
+watch(
+  sanitizedHtml,
+  () => {
+    if (!contentEl.value) return
+    applyHighlightTheme(DEFAULT_HIGHLIGHT_THEME)
+    highlightCodeBlocks(contentEl.value)
+  },
+  { flush: 'post' },
+)
 
 function isReadableType(type: ModuleItem['type']): boolean {
   return type === 'Page' || type === 'Assignment'
@@ -87,7 +104,7 @@ onMounted(async () => {
             This item has no content yet.
           </div>
           <!-- eslint-disable-next-line vue/no-v-html -- content passes through sanitizeCanvasHtml first -->
-          <div v-else v-html="sanitizedHtml" />
+          <div v-else ref="contentEl" v-html="sanitizedHtml" />
         </template>
         <!--
           Only Page/Assignment items link here from the Modules view, but a
@@ -180,6 +197,31 @@ onMounted(async () => {
   padding: var(--space-4);
   overflow-x: auto;
   margin: 0 0 var(--space-4);
+}
+/*
+ * Highlighted code blocks: the highlight module wraps each pre in a
+ * .code-block positioning context and appends a per-block language
+ * override select (auto-detection is a heuristic, so a wrong detection
+ * is never stuck wrong).
+ */
+.reading-column :deep(.code-block) {
+  position: relative;
+}
+.reading-column :deep(.code-lang-select) {
+  position: absolute;
+  top: var(--space-2);
+  right: var(--space-2);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  border: 1px solid var(--code-border);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-body);
+  font-size: var(--text-xs);
+  padding: 0 var(--space-1);
+}
+.reading-column :deep(.code-lang-select:focus-visible) {
+  border-color: var(--color-accent);
+  outline: none;
 }
 .reading-column :deep(code) {
   font-family: var(--font-mono);

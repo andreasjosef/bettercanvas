@@ -1,0 +1,78 @@
+/*
+ * Better Canvas v1 highlight theme — "warm dark".
+ *
+ * Token-driven: token colors come from tokens.css (--code-* palette,
+ * the user's Warm Dark Gruvbox scheme), so code highlighting stays in
+ * sync with the rest of the app. Swapping to another theme at runtime
+ * (see src/highlightTheme.ts) points the #hljs-theme-stylesheet <link>
+ * at a different file in this directory — dropping in a new theme file
+ * needs no rebuild. Self-contained themes should define their own
+ * colors instead of var() references.
+ */
+
+.hljs {
+  color: var(--code-text);
+}
+
+.hljs-comment,
+.hljs-quote {
+  color: var(--code-comment);
+  font-style: italic;
+}
+
+.hljs-keyword,
+.hljs-selector-tag,
+.hljs-literal,
+.hljs-doctag,
+.hljs-formula {
+  color: var(--code-keyword);
+}
+
+.hljs-string,
+.hljs-regexp,
+.hljs-addition,
+.hljs-attribute,
+.hljs-meta .hljs-string {
+  color: var(--code-string);
+}
+
+.hljs-title,
+.hljs-section,
+.hljs-title.function_,
+.hljs-title.class_,
+.hljs-title.class_.inherited__ {
+  color: var(--code-function);
+}
+
+.hljs-number,
+.hljs-symbol,
+.hljs-bullet,
+.hljs-meta,
+.hljs-link {
+  color: var(--code-number);
+}
+
+.hljs-punctuation,
+.hljs-operator,
+.hljs-params {
+  color: var(--code-punct);
+}
+
+.hljs-variable,
+.hljs-template-variable,
+.hljs-type,
+.hljs-attr,
+.hljs-selector-attr,
+.hljs-selector-class,
+.hljs-selector-id,
+.hljs-property {
+  color: var(--code-text);
+}
+
+.hljs-emphasis {
+  font-style: italic;
+}
+
+.hljs-strong {
+  font-weight: bold;
+}
