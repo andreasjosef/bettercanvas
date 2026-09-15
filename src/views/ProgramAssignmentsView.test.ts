@@ -87,8 +87,7 @@ describe('ProgramAssignmentsView', () => {
     expect(capstoneIndex).toBeGreaterThan(essayIndex)
   })
 
-  it('renders undated Assignments in their own section, excluded from the three due-date groups', async () => {
-    fetchMock.mockResolvedValue(assignmentsResponse(DUE_DATE_GROUPING_FIXTURE))
+  it('renders undated Assignments in their own section, excluded from the three due-date groups', async () => {    fetchMock.mockResolvedValue(assignmentsResponse(DUE_DATE_GROUPING_FIXTURE))
     const { wrapper } = await mountAppAtPath('/programs/585/assignments')
 
     const undated = sectionText(wrapper, 'undated')
@@ -105,5 +104,46 @@ describe('ProgramAssignmentsView', () => {
 
     expect(sectionText(wrapper, 'today')).toContain('Overdue worksheet')
     expect(sectionText(wrapper, 'later')).not.toContain('Overdue worksheet')
+  })
+
+  it('shows counts on the three due-date groups, with the undated section excluded from counts', async () => {
+    fetchMock.mockResolvedValue(assignmentsResponse(DUE_DATE_GROUPING_FIXTURE))
+    const { wrapper } = await mountAppAtPath('/programs/585/assignments')
+
+    expect(
+      wrapper.find('[data-testid="assignments-today"] h2').text(),
+    ).toBe('Today (2)')
+    expect(
+      wrapper.find('[data-testid="assignments-this-week"] h2').text(),
+    ).toBe('This week (1)')
+    expect(wrapper.find('[data-testid="assignments-later"] h2').text()).toBe(
+      'Later (2)',
+    )
+    expect(
+      wrapper.find('[data-testid="assignments-undated"] h2').text(),
+    ).toBe('No due date')
+  })
+
+  it('follows Link-header pagination when fetching the Program\'s Assignments', async () => {
+    fetchMock
+      .mockResolvedValueOnce(
+        assignmentsResponse(
+          [{ id: 18, name: 'Reading quiz', due_at: dueIn(2 * HOUR) }],
+          `<https://chasacademy.instructure.com/api/v1/courses/585/assignments?order_by=due_at&per_page=100&page=2>; rel="next"`,
+        ),
+      )
+      .mockResolvedValueOnce(
+        assignmentsResponse([
+          { id: 30, name: 'Capstone brief', due_at: dueIn(30 * DAY) },
+        ]),
+      )
+    const { wrapper } = await mountAppAtPath('/programs/585/assignments')
+
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(fetchMock.mock.calls[1][0]).toBe(
+      '/api/v1/courses/585/assignments?order_by=due_at&per_page=100&page=2',
+    )
+    expect(sectionText(wrapper, 'today')).toContain('Reading quiz')
+    expect(sectionText(wrapper, 'later')).toContain('Capstone brief')
   })
 })

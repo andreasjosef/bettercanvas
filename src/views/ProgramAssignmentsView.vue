@@ -22,13 +22,15 @@ const GROUP_HEADINGS: Record<DueGroup, string> = {
   undated: 'No due date',
 }
 
+const WEEK_MS = 7 * 24 * 60 * 60 * 1000
+
 function dueGroupFor(assignment: Assignment, now: number): DueGroup {
   if (!assignment.due_at) return 'undated'
   const due = new Date(assignment.due_at).getTime()
   const endOfToday = new Date(now)
   endOfToday.setHours(23, 59, 59, 999)
   if (due <= endOfToday.getTime()) return 'today'
-  if (due <= now + 7 * 24 * 60 * 60 * 1000) return 'this-week'
+  if (due <= now + WEEK_MS) return 'this-week'
   return 'later'
 }
 
@@ -59,7 +61,11 @@ const sections = computed(() => {
   }
   return DUE_GROUPS.filter((group) => groups[group].length > 0).map((group) => {
     const sorted = [...groups[group]].sort((a, b) => dueTime(a) - dueTime(b))
-    return { group, heading: GROUP_HEADINGS[group], assignments: sorted }
+    const heading =
+      group === 'undated'
+        ? GROUP_HEADINGS[group]
+        : `${GROUP_HEADINGS[group]} (${groups[group].length})`
+    return { group, heading, assignments: sorted }
   })
 })
 
