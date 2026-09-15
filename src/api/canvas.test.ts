@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from 'vitest'
 import {
   fetchCourses,
+  fetchModules,
   fetchNextDueAssignment,
   parseNextLink,
   setAuthFailureHandler,
@@ -155,6 +156,92 @@ describe('fetchNextDueAssignment', () => {
     await expect(
       fetchNextDueAssignment('bad-token', 585),
     ).rejects.toMatchObject({ name: 'CanvasError', status: 401 })
+  })
+})
+
+describe('fetchModules', () => {
+  let fetchMock: ReturnType<typeof vi.fn>
+
+  beforeEach(() => {
+    fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('GETs the Course\'s Modules with their items included, through the proxy, relaying the token', async () => {
+    fetchMock.mockResolvedValue(
+      jsonResponse([
+        {
+          id: 101,
+          name: 'Module 01',
+          position: 1,
+          items_count: 2,
+          items: [
+            { id: 1, type: 'SubHeader', title: 'Getting started' },
+            { id: 2, type: 'Page', title: 'Intro to Vue', page_url: 'intro-to-vue' },
+          ],
+        },
+      ]),
+    )
+
+    const modules = await fetchModules('token123', 585)
+
+    expect(fetchMock).toHaveBeenCalledOnce()
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit]
+    expect(url).toBe('/api/v1/courses/585/modules?include[]=items&per_page=100')
+    expect(url).not.toContain(UPSTREAM_ORIGIN)
+    expect(init.method).toBe('GET')
+    expect(init.headers).toMatchObject({ Authorization: 'Bearer token123' })
+    expect(modules).toEqual([
+      {
+        id: 101,
+        name: 'Module 01',
+        position: 1,
+        items_count: 2,
+        items: [
+          { id: 1, type: 'SubHeader', title: 'Getting started' },
+          { id: 2, type: 'Page', title: 'Intro to Vue', page_url: 'intro-to-vue' },
+        ],
+      },
+    ])
+  })
+
+  it('follows the Link header rel="next" through the proxy until no next remains', async () => {
+    fetchMock
+      .mockResolvedValueOnce(
+        jsonResponse([{ id: 101, name: 'Module 01', position: 1, items: [] }], {
+          link: `<${UPSTREAM_ORIGIN}/api/v1/courses/585/modules?page=2&per_page=100>; rel="next"`,
+        }),
+      )
+      .mockResolvedValueOnce(
+        jsonResponse([{ id: 102, name: 'Module 02', position: 2, items: [] }]),
+      )
+
+    const modules = await fetchModules('token123', 585)
+
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    const [secondUrl] = fetchMock.mock.calls[1] as [string, RequestInit]
+    expect(secondUrl).toBe('/api/v1/courses/585/modules?page=2&per_page=100')
+    expect(secondUrl).not.toContain(UPSTREAM_ORIGIN)
+    expect(modules).toEqual([
+      { id: 101, name: 'Module 01', position: 1, items: [] },
+      { id: 102, name: 'Module 02', position: 2, items: [] },
+    ])
+  })
+
+  it('throws a CanvasError carrying the status for a 401 response', async () => {
+    fetchMock.mockResolvedValue(
+      jsonResponse({ error: 'Invalid token' }, { status: 401 }),
+    )
+
+    await expect(fetchModules('bad-token', 585)).rejects.toMatchObject({
+      name: 'CanvasError',
+      status: 401,
+    })
+    expect(fetchMock).toHaveBeenCalledOnce()
   })
 })
 

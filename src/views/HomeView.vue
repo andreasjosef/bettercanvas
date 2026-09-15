@@ -92,20 +92,25 @@ onMounted(async () => {
         :key="row.courseId"
         class="border border-border rounded-md bg-surface p-3 flex flex-col gap-1 text-left"
       >
-        <span class="font-heading text-heading text-lg">{{ row.name }}</span>
-        <span v-if="row.failed" class="text-sm text-danger">
-          Could not load upcoming assignments.
-        </span>
-        <span
-          v-else-if="row.nextDueName && row.dueAt"
-          class="text-sm text-text-muted"
+        <RouterLink
+          :to="{ name: 'program-modules', params: { programId: String(row.courseId) } }"
+          class="no-underline text-inherit flex flex-col gap-1"
         >
-          Next due: {{ row.nextDueName }} — {{ formatDueDate(row.dueAt) }}
-        </span>
-        <span v-else-if="row.nextDueName" class="text-sm text-text-muted">
-          Next due: {{ row.nextDueName }}
-        </span>
-        <span v-else class="text-sm text-text-muted">No upcoming assignments.</span>
+          <span class="font-heading text-heading text-lg">{{ row.name }}</span>
+          <span v-if="row.failed" class="text-sm text-danger">
+            Could not load upcoming assignments.
+          </span>
+          <span
+            v-else-if="row.nextDueName && row.dueAt"
+            class="text-sm text-text-muted"
+          >
+            Next due: {{ row.nextDueName }} — {{ formatDueDate(row.dueAt) }}
+          </span>
+          <span v-else-if="row.nextDueName" class="text-sm text-text-muted">
+            Next due: {{ row.nextDueName }}
+          </span>
+          <span v-else class="text-sm text-text-muted">No upcoming assignments.</span>
+        </RouterLink>
       </li>
     </ul>
   </main>
