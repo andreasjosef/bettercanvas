@@ -1,0 +1,648 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>PROTOTYPE — Program nav & Done-state (issue #43)</title>
+<style>
+  :root {
+    --color-bg: #131311;
+    --color-surface: #1c1a17;
+    --color-surface-alt: #201e1a;
+    --color-border: #33302a;
+    --color-text: #ebdbb2;
+    --color-text-muted: #928374;
+    --color-heading: #fbf1c7;
+    --color-accent: #d79921;
+    --color-accent-text: #131311;
+    --color-danger: #ea6962;
+    --color-success: #a9b665;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--color-bg);
+    color: var(--color-text);
+    font-family: -apple-system, 'Segoe UI', Inter, Roboto, sans-serif;
+    line-height: 1.5;
+    padding: 24px;
+  }
+  h1, h2, h3 { color: var(--color-heading); font-weight: 600; margin: 0 0 8px; }
+  .wrap { max-width: 920px; margin: 0 auto; display: flex; flex-direction: column; gap: 28px; }
+  .card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+    padding: 18px 20px;
+  }
+  .muted { color: var(--color-text-muted); }
+  .prototype-flag {
+    display: inline-block;
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-accent-text);
+    background: var(--color-accent);
+    padding: 2px 8px;
+    border-radius: 3px;
+    margin-bottom: 10px;
+  }
+  button {
+    font: inherit;
+    cursor: pointer;
+    border: 1px solid var(--color-border);
+    background: var(--color-surface-alt);
+    color: var(--color-text);
+    border-radius: 3px;
+    padding: 6px 10px;
+  }
+  button:hover:not(:disabled) { border-color: var(--color-accent); }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+  button.primary { background: var(--color-accent); color: var(--color-accent-text); border-color: var(--color-accent); font-weight: 600; }
+  button.link {
+    background: none; border: none; padding: 4px 0; text-align: left;
+    color: var(--color-text); border-bottom: 2px solid transparent;
+  }
+  button.link.active { color: var(--color-heading); border-bottom-color: var(--color-accent); }
+  button.danger-text { color: var(--color-danger); }
+  .tabs { display: flex; gap: 8px; flex-wrap: wrap; border-bottom: 1px solid var(--color-border); padding-bottom: 8px; margin-bottom: 12px; }
+  .tabs button.tab { background: none; border: none; border-bottom: 2px solid transparent; border-radius: 0; padding: 6px 4px; }
+  .tabs button.tab.active { border-bottom-color: var(--color-accent); color: var(--color-heading); }
+  .step-list { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
+  .step {
+    display: flex; align-items: center; gap: 10px;
+    padding: 4px 0;
+  }
+  .step .marker { width: 20px; text-align: center; color: var(--color-text-muted); }
+  .step.done .marker { color: var(--color-success); }
+  .step.done button { text-decoration: line-through; opacity: 0.6; }
+  .mock { display: flex; gap: 0; border: 1px solid var(--color-border); border-radius: 4px; overflow: hidden; }
+  .sidebar { width: 220px; flex-shrink: 0; background: var(--color-surface-alt); border-right: 1px solid var(--color-border); padding: 14px; display: flex; flex-direction: column; gap: 4px; }
+  .sidebar .section-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--color-text-muted); margin: 12px 0 4px; }
+  .main-pane { flex: 1; background: var(--color-surface); padding: 16px 20px; min-height: 260px; }
+  ol.item-list, ul.item-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+  .item-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--color-border); }
+  .item-row .due { color: var(--color-text-muted); font-size: 13px; }
+  .badge { font-size: 11px; padding: 1px 6px; border-radius: 3px; border: 1px solid var(--color-border); color: var(--color-text-muted); }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; }
+  table caption { text-align: left; color: var(--color-text-muted); font-size: 12px; margin-bottom: 4px; }
+  th, td { text-align: left; padding: 4px 8px; border-bottom: 1px solid var(--color-border); }
+  th { color: var(--color-text-muted); font-weight: 500; }
+  .warning {
+    border: 1px solid var(--color-danger);
+    background: rgba(234, 105, 98, 0.1);
+    color: var(--color-danger);
+    padding: 10px 12px;
+    border-radius: 3px;
+    margin-top: 12px;
+    font-size: 14px;
+  }
+  .note { border: 1px dashed var(--color-border); padding: 8px 10px; border-radius: 3px; font-size: 13px; color: var(--color-text-muted); margin-top: 10px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 720px) { .grid2 { grid-template-columns: 1fr; } .mock { flex-direction: column; } .sidebar { width: 100%; border-right: none; border-bottom: 1px solid var(--color-border); } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="card">
+    <span class="prototype-flag">Throwaway prototype — issue #43</span>
+    <h1>Per-Program navigation restructuring</h1>
+    <p>
+      This prototypes the <strong>state model</strong> behind the new per-Program nav from
+      <a href="https://github.com/andreasjosef/bettercanvas/issues/43" style="color: var(--color-accent)">issue #43</a>:
+      a sidebar of <strong>Finished</strong> + the <strong>Module</strong> list, a Module's tabbed
+      <strong>Lessons</strong>/<strong>Assignments</strong>, a due-soon Landing aggregate, and a
+      <strong>Finished</strong> view that Done things can be un-marked from. The visual language
+      (dark Gruvbox tokens, reading-list layout) is already settled — this is <em>not</em> a look-and-feel
+      exploration. The question is: <strong>does "Done" hiding things from normal browsing, cascading down
+      when a whole Module is marked Done, actually hold together once you push it through edge cases?</strong>
+      Two rules are baked in on purpose so you can feel whether they're right:
+    </p>
+    <ul>
+      <li>Marking a <strong>Module</strong> Done cascades down: all its Lessons/Assignments become Done too, and it (and them) disappear from normal browsing into Finished.</li>
+      <li>Marking a <strong>Lesson/Assignment</strong> Done individually does <em>not</em> touch its parent Module's Done flag — a Module can sit in the sidebar with some of its contents already finished.</li>
+      <li>Un-marking a Lesson/Assignment whose Module is Done pulls that <strong>Module</strong> back out of Done too (so the item is reachable again) — but touches nothing else in it: every other already-Done Lesson/Assignment in that Module stays Done.</li>
+    </ul>
+    <p class="muted">Play with the mock nav below, or step through a guided scenario — Scenario 3 walks through that last rule.</p>
+  </header>
+
+  <section class="card" id="walkthroughs"></section>
+
+  <section class="card" id="state-panel"></section>
+
+  <section class="card">
+    <h2>Live mock</h2>
+    <p class="muted" style="margin-top:0">Everything below is clickable — this <em>is</em> the free-play surface.</p>
+    <div class="mock">
+      <aside class="sidebar" id="sidebar"></aside>
+      <main class="main-pane" id="main-pane"></main>
+    </div>
+  </section>
+
+  <section class="card" id="raw-actions"></section>
+
+</div>
+
+<script type="module">
+  // =========================================================================
+  // PURE MODEL — liftable into the real app once the question is answered.
+  // No DOM access below this block; the shell only calls in.
+  // =========================================================================
+
+  const DUE_GROUPS = ['today', 'this-week', 'later', 'undated'];
+  const GROUP_HEADINGS = { today: 'Today', 'this-week': 'This week', later: 'Later', undated: 'No due date' };
+  const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+
+  function createInitialState() {
+    const now = Date.now();
+    const soon = new Date(now + 2 * 60 * 60 * 1000).toISOString();
+    const thisWeek = new Date(now + 3 * 24 * 60 * 60 * 1000).toISOString();
+    const later = new Date(now + 20 * 24 * 60 * 60 * 1000).toISOString();
+    return {
+      modules: [
+        { id: 'm1', title: 'Week 1 — Foundations', done: false },
+        { id: 'm2', title: 'Week 2 — Data Structures', done: false },
+        { id: 'm3', title: 'Week 3 — Recursion', done: false },
+      ],
+      items: [
+        { id: 'l1', moduleId: 'm1', type: 'lesson', title: 'Reading: Syllabus', done: false },
+        { id: 'l2', moduleId: 'm1', type: 'lesson', title: 'Reading: Setting up your environment', done: false },
+        { id: 'l3', moduleId: 'm2', type: 'lesson', title: 'Reading: Arrays vs Linked Lists', done: false },
+        { id: 'l4', moduleId: 'm3', type: 'lesson', title: 'Reading: Base cases', done: false },
+        { id: 'a1', moduleId: 'm1', type: 'assignment', title: 'Problem Set 1', dueAt: soon, done: false },
+        { id: 'a2', moduleId: 'm2', type: 'assignment', title: 'Problem Set 2', dueAt: thisWeek, done: false },
+        { id: 'a3', moduleId: 'm2', type: 'assignment', title: 'Lab: Linked List', dueAt: null, done: false },
+        { id: 'a4', moduleId: 'm3', type: 'assignment', title: 'Problem Set 3', dueAt: later, done: false },
+      ],
+      view: { type: 'landing' },
+    };
+  }
+
+  function reduce(state, action) {
+    switch (action.type) {
+      case 'SELECT_MODULE': {
+        const mod = state.modules.find((m) => m.id === action.moduleId);
+        if (!mod || mod.done) return state; // illegal: a Done Module is hidden from navigation
+        return { ...state, view: { type: 'module', moduleId: action.moduleId, tab: 'lessons' } };
+      }
+      case 'SET_TAB': {
+        if (state.view.type !== 'module') return state;
+        return { ...state, view: { ...state.view, tab: action.tab } };
+      }
+      case 'GO_LANDING':
+        return { ...state, view: { type: 'landing' } };
+      case 'GO_FINISHED':
+        return { ...state, view: { type: 'finished' } };
+      case 'MARK_MODULE_DONE': {
+        const modules = state.modules.map((m) => (m.id === action.moduleId ? { ...m, done: true } : m));
+        const items = state.items.map((i) => (i.moduleId === action.moduleId ? { ...i, done: true } : i));
+        const view =
+          state.view.type === 'module' && state.view.moduleId === action.moduleId
+            ? { type: 'landing' }
+            : state.view;
+        return { ...state, modules, items, view };
+      }
+      case 'UNMARK_MODULE_DONE': {
+        const modules = state.modules.map((m) => (m.id === action.moduleId ? { ...m, done: false } : m));
+        const items = state.items.map((i) => (i.moduleId === action.moduleId ? { ...i, done: false } : i));
+        return { ...state, modules, items };
+      }
+      case 'MARK_ITEM_DONE':
+        return { ...state, items: state.items.map((i) => (i.id === action.itemId ? { ...i, done: true } : i)) };
+      case 'UNMARK_ITEM_DONE': {
+        const item = state.items.find((i) => i.id === action.itemId);
+        const items = state.items.map((i) => (i.id === action.itemId ? { ...i, done: false } : i));
+        // Un-marking a child pulls its parent Module out of Done too (a Done
+        // Module can't have a not-Done child), but touches nothing else: every
+        // other Lesson/Assignment in that Module keeps whatever Done state it
+        // already had.
+        const modules =
+          item && isModuleDone(state, item.moduleId)
+            ? state.modules.map((m) => (m.id === item.moduleId ? { ...m, done: false } : m))
+            : state.modules;
+        return { ...state, items, modules };
+      }
+      case 'RESET':
+        return createInitialState();
+      default:
+        return state;
+    }
+  }
+
+  function dueGroupFor(item, now) {
+    if (!item.dueAt) return 'undated';
+    const due = new Date(item.dueAt).getTime();
+    const endOfToday = new Date(now);
+    endOfToday.setHours(23, 59, 59, 999);
+    if (due <= endOfToday.getTime()) return 'today';
+    if (due <= now + WEEK_MS) return 'this-week';
+    return 'later';
+  }
+
+  function isModuleDone(state, moduleId) {
+    const mod = state.modules.find((m) => m.id === moduleId);
+    return !!mod && mod.done;
+  }
+
+  function visibleModules(state) {
+    return state.modules.filter((m) => !m.done);
+  }
+
+  function moduleItems(state, moduleId, type) {
+    return state.items.filter((i) => i.moduleId === moduleId && i.type === type && !i.done);
+  }
+
+  function dueSoonAggregate(state) {
+    const now = Date.now();
+    const groups = { today: [], 'this-week': [], later: [], undated: [] };
+    for (const item of state.items) {
+      if (item.type !== 'assignment' || item.done) continue;
+      groups[dueGroupFor(item, now)].push(item);
+    }
+    return DUE_GROUPS.filter((g) => groups[g].length > 0).map((g) => ({
+      group: g,
+      heading: GROUP_HEADINGS[g],
+      items: [...groups[g]].sort((a, b) => dueTime(a) - dueTime(b)),
+    }));
+  }
+
+  function dueTime(item) {
+    return item.dueAt ? new Date(item.dueAt).getTime() : Infinity;
+  }
+
+  function finishedModules(state) {
+    return state.modules.filter((m) => m.done);
+  }
+
+  function finishedItems(state, type) {
+    // Lists every Done item of this type, including ones Done only because
+    // their parent Module was marked Done (the cascade) — Finished is meant
+    // to show the full Done set, not just items finished one at a time.
+    return state.items.filter((i) => i.type === type && i.done);
+  }
+
+  function orphanedItems(state) {
+    // Invariant: a Done Module should never have a not-Done child — UNMARK_ITEM_DONE
+    // pulls the parent Module out of Done specifically to prevent this. Kept as a
+    // live check: if this ever returns anything, the reducer has a bug, since such
+    // an item would be unreachable (hidden Module, and not listed in Finished either).
+    return state.items.filter((i) => !i.done && isModuleDone(state, i.moduleId));
+  }
+
+  // =========================================================================
+  // THROWAWAY SHELL — the demo page. Everything below calls into the model
+  // above; nothing flows the other way.
+  // =========================================================================
+
+  const SCENARIOS = [
+    {
+      id: 'happy-path',
+      title: 'Happy path',
+      description:
+        'Finish one Lesson and one Assignment individually inside a Module. Watch them drop off Landing and the Module’s tabs, and land in Finished — without the Module itself being Done.',
+      steps: [
+        { label: 'Open "Week 1 — Foundations"', action: { type: 'SELECT_MODULE', moduleId: 'm1' } },
+        { label: 'Mark "Reading: Syllabus" Done', action: { type: 'MARK_ITEM_DONE', itemId: 'l1' } },
+        { label: 'Switch to the Assignments tab', action: { type: 'SET_TAB', tab: 'assignments' } },
+        { label: 'Mark "Problem Set 1" Done', action: { type: 'MARK_ITEM_DONE', itemId: 'a1' } },
+        { label: 'Back to Landing', action: { type: 'GO_LANDING' } },
+        { label: 'Open Finished', action: { type: 'GO_FINISHED' } },
+      ],
+    },
+    {
+      id: 'finish-module',
+      title: 'Finish a whole Module',
+      description:
+        'Mark an entire Module Done and watch it vanish from the sidebar into one Finished entry — then un-mark it and watch everything come back.',
+      steps: [
+        { label: 'Open "Week 2 — Data Structures"', action: { type: 'SELECT_MODULE', moduleId: 'm2' } },
+        { label: 'Mark this Module Done', action: { type: 'MARK_MODULE_DONE', moduleId: 'm2' } },
+        { label: 'Open Finished', action: { type: 'GO_FINISHED' } },
+        { label: 'Un-mark "Week 2 — Data Structures"', action: { type: 'UNMARK_MODULE_DONE', moduleId: 'm2' } },
+      ],
+    },
+    {
+      id: 'unmark-child',
+      title: 'Un-mark a child of a Done Module',
+      description:
+        'Finish one Lesson on its own, then finish the whole Module around it (which also finishes its Assignment), then go to Finished and un-mark just that one Lesson — not the Module. Watch the Module come back to normal browsing on its own, while the Assignment stays Done.',
+      steps: [
+        { label: 'Open "Week 3 — Recursion"', action: { type: 'SELECT_MODULE', moduleId: 'm3' } },
+        { label: 'Mark "Reading: Base cases" Done', action: { type: 'MARK_ITEM_DONE', itemId: 'l4' } },
+        { label: 'Mark this Module Done too', action: { type: 'MARK_MODULE_DONE', moduleId: 'm3' } },
+        { label: 'Open Finished', action: { type: 'GO_FINISHED' } },
+        { label: 'Un-mark "Reading: Base cases" only', action: { type: 'UNMARK_ITEM_DONE', itemId: 'l4' } },
+        { label: 'Open "Week 3 — Recursion" again', action: { type: 'SELECT_MODULE', moduleId: 'm3' } },
+      ],
+    },
+    {
+      id: 'illegal-open',
+      title: 'Attempt something illegal',
+      description:
+        'Finish a Module, then try to open it anyway using the raw action panel (there is no button for this in the mock sidebar — a Done Module is not supposed to be reachable). Nothing should happen.',
+      steps: [
+        { label: 'Open "Week 1 — Foundations"', action: { type: 'SELECT_MODULE', moduleId: 'm1' } },
+        { label: 'Mark this Module Done', action: { type: 'MARK_MODULE_DONE', moduleId: 'm1' } },
+        { label: 'Try to open it again anyway', action: { type: 'SELECT_MODULE', moduleId: 'm1' } },
+      ],
+    },
+  ];
+
+  let state = createInitialState();
+  let activeScenarioId = SCENARIOS[0].id;
+  let scenarioStepIndex = 0; // next step to run, per activeScenarioId; reset when a scenario (re)starts
+  let lastNote = null;
+
+  function dispatch(action) {
+    const prev = state;
+    state = reduce(state, action);
+    lastNote = state === prev ? noopExplanation(action) : null;
+    render();
+  }
+
+  function noopExplanation(action) {
+    if (action.type === 'SELECT_MODULE') {
+      const mod = state.modules.find((m) => m.id === action.moduleId);
+      return `Nothing happened: "${mod ? mod.title : action.moduleId}" is Done, so it's hidden from navigation and can't be opened.`;
+    }
+    return 'Nothing happened: that action has no effect in the current state.';
+  }
+
+  function startScenario(id) {
+    activeScenarioId = id;
+    scenarioStepIndex = 0;
+    lastNote = null;
+    state = createInitialState();
+    render();
+  }
+
+  function runScenarioStep(id, index) {
+    const scenario = SCENARIOS.find((s) => s.id === id);
+    if (!scenario || index !== scenarioStepIndex) return;
+    dispatch(scenario.steps[index].action);
+    scenarioStepIndex += 1;
+  }
+
+  function formatDue(iso) {
+    return new Date(iso).toLocaleString('en-GB', {
+      day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
+    });
+  }
+
+  function escapeHtml(str) {
+    return str.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+
+  function render() {
+    renderWalkthroughs();
+    renderStatePanel();
+    renderSidebar();
+    renderMainPane();
+    renderRawActions();
+  }
+
+  function renderWalkthroughs() {
+    const el = document.getElementById('walkthroughs');
+    const scenario = SCENARIOS.find((s) => s.id === activeScenarioId);
+    const tabs = SCENARIOS.map(
+      (s) => `<button class="tab${s.id === activeScenarioId ? ' active' : ''}" data-action="VIEW_SCENARIO" data-arg="${s.id}">${escapeHtml(s.title)}</button>`,
+    ).join('');
+    const steps = scenario.steps
+      .map((step, i) => {
+        const isDone = i < scenarioStepIndex;
+        const isNext = i === scenarioStepIndex;
+        return `<div class="step${isDone ? ' done' : ''}">
+          <span class="marker">${isDone ? '✓' : i + 1}</span>
+          <button data-action="RUN_STEP" data-arg="${scenario.id}:${i}" ${isNext ? '' : 'disabled'}>${escapeHtml(step.label)}</button>
+        </div>`;
+      })
+      .join('');
+    const complete = scenarioStepIndex >= scenario.steps.length;
+    el.innerHTML = `
+      <h2>Guided walkthroughs</h2>
+      <div class="tabs">${tabs}</div>
+      <p>${escapeHtml(scenario.description)}</p>
+      <button class="primary" data-action="START_SCENARIO" data-arg="${scenario.id}">Start this scenario (resets state)</button>
+      <div class="step-list">${steps}</div>
+      ${complete ? '<p class="note">Scenario complete — check the state panel and the mock nav below for what it left behind.</p>' : ''}
+    `;
+  }
+
+  function renderStatePanel() {
+    const el = document.getElementById('state-panel');
+    const viewLabel =
+      state.view.type === 'landing'
+        ? 'Landing (no Module selected)'
+        : state.view.type === 'finished'
+          ? 'Finished'
+          : `Module "${state.modules.find((m) => m.id === state.view.moduleId)?.title ?? state.view.moduleId}" — ${state.view.tab} tab`;
+
+    const moduleRows = state.modules
+      .map((m) => `<tr><td>${escapeHtml(m.title)}</td><td>${m.done ? '✓ Done' : '—'}</td></tr>`)
+      .join('');
+    const itemRows = state.items
+      .map(
+        (i) =>
+          `<tr><td>${escapeHtml(i.title)}</td><td>${i.type}</td><td>${escapeHtml(state.modules.find((m) => m.id === i.moduleId)?.title ?? i.moduleId)}</td><td>${i.done ? '✓ Done' : '—'}</td></tr>`,
+      )
+      .join('');
+
+    const orphans = orphanedItems(state);
+    const warning = orphans.length
+      ? `<div class="warning">⚠️ Invariant broken: ${orphans.length} item(s) are not marked Done while their Module is Done, so they're unreachable — this should never happen; UNMARK_ITEM_DONE is supposed to prevent it. Affected: ${orphans.map((i) => `"${escapeHtml(i.title)}"`).join(', ')}.</div>`
+      : '';
+
+    el.innerHTML = `
+      <h2>Current state</h2>
+      <p><strong>View:</strong> ${escapeHtml(viewLabel)}</p>
+      ${lastNote ? `<p class="danger-text">${escapeHtml(lastNote)}</p>` : ''}
+      <div class="grid2">
+        <table><caption>Modules</caption><thead><tr><th>Title</th><th>Done?</th></tr></thead><tbody>${moduleRows}</tbody></table>
+        <table><caption>Lessons &amp; Assignments</caption><thead><tr><th>Title</th><th>Type</th><th>Module</th><th>Done?</th></tr></thead><tbody>${itemRows}</tbody></table>
+      </div>
+      ${warning}
+    `;
+  }
+
+  function renderSidebar() {
+    const el = document.getElementById('sidebar');
+    const modules = visibleModules(state);
+    const hiddenCount = state.modules.length - modules.length;
+    el.innerHTML = `
+      <button class="link${state.view.type === 'landing' ? ' active' : ''}" data-action="GO_LANDING">◀ Program (due soon)</button>
+      <button class="link${state.view.type === 'finished' ? ' active' : ''}" data-action="GO_FINISHED">Finished</button>
+      <div class="section-label">Modules</div>
+      ${modules
+        .map(
+          (m) =>
+            `<button class="link${state.view.type === 'module' && state.view.moduleId === m.id ? ' active' : ''}" data-action="SELECT_MODULE" data-arg="${m.id}">${escapeHtml(m.title)}</button>`,
+        )
+        .join('')}
+      ${hiddenCount ? `<p class="muted" style="font-size:12px; margin-top:8px;">(${hiddenCount} Done Module${hiddenCount > 1 ? 's' : ''} hidden — see Finished)</p>` : ''}
+    `;
+  }
+
+  function renderMainPane() {
+    const el = document.getElementById('main-pane');
+    if (state.view.type === 'landing') {
+      const sections = dueSoonAggregate(state);
+      el.innerHTML = `
+        <h3>Due soon, across the Program</h3>
+        ${sections.length === 0 ? '<p class="muted">Nothing due — or everything due is already Done.</p>' : ''}
+        ${sections
+          .map(
+            (s) => `
+          <div class="section-label">${s.heading}</div>
+          <ul class="item-list">
+            ${s.items
+              .map(
+                (i) => `<li class="item-row">
+                  <span>${escapeHtml(i.title)} <span class="badge">${escapeHtml(state.modules.find((m) => m.id === i.moduleId)?.title ?? '')}</span></span>
+                  <span class="due">${i.dueAt ? formatDue(i.dueAt) : 'no due date'}</span>
+                  <button data-action="MARK_ITEM_DONE" data-arg="${i.id}">Mark Done</button>
+                </li>`,
+              )
+              .join('')}
+          </ul>`,
+          )
+          .join('')}
+      `;
+      return;
+    }
+    if (state.view.type === 'finished') {
+      const doneModules = finishedModules(state);
+      const doneLessons = finishedItems(state, 'lesson');
+      const doneAssignments = finishedItems(state, 'assignment');
+      const row = (title, unmarkAction, unmarkArg) => `
+        <li class="item-row">
+          <span>${escapeHtml(title)}</span>
+          <button class="danger-text" data-action="${unmarkAction}" data-arg="${unmarkArg}">Un-mark</button>
+        </li>`;
+      el.innerHTML = `
+        <h3>Finished</h3>
+        <div class="section-label">Done Modules</div>
+        <ul class="item-list">
+          ${doneModules.length ? doneModules.map((m) => row(m.title, 'UNMARK_MODULE_DONE', m.id)).join('') : '<li class="muted" style="padding:8px 0;">None yet.</li>'}
+        </ul>
+        <div class="section-label">Done Lessons</div>
+        <ul class="item-list">
+          ${doneLessons.length ? doneLessons.map((i) => row(i.title, 'UNMARK_ITEM_DONE', i.id)).join('') : '<li class="muted" style="padding:8px 0;">None yet.</li>'}
+        </ul>
+        <div class="section-label">Done Assignments</div>
+        <ul class="item-list">
+          ${doneAssignments.length ? doneAssignments.map((i) => row(i.title, 'UNMARK_ITEM_DONE', i.id)).join('') : '<li class="muted" style="padding:8px 0;">None yet.</li>'}
+        </ul>
+      `;
+      return;
+    }
+    // module view
+    const mod = state.modules.find((m) => m.id === state.view.moduleId);
+    const tab = state.view.tab;
+    const items = moduleItems(state, mod.id, tab === 'lessons' ? 'lesson' : 'assignment');
+    el.innerHTML = `
+      <h3>${escapeHtml(mod.title)}</h3>
+      <button data-action="MARK_MODULE_DONE" data-arg="${mod.id}" style="margin-bottom:12px;">Mark this Module Done</button>
+      <div class="tabs">
+        <button class="tab${tab === 'lessons' ? ' active' : ''}" data-action="SET_TAB" data-arg="lessons">Lessons</button>
+        <button class="tab${tab === 'assignments' ? ' active' : ''}" data-action="SET_TAB" data-arg="assignments">Assignments</button>
+      </div>
+      <ul class="item-list">
+        ${items.length ? '' : '<li class="muted" style="padding:8px 0;">Nothing here — already Done, or none exist.</li>'}
+        ${items
+          .map(
+            (i) => `<li class="item-row">
+              <span>${escapeHtml(i.title)}${i.type === 'assignment' && i.dueAt ? ` <span class="due">Due ${formatDue(i.dueAt)}</span>` : ''}</span>
+              <button data-action="MARK_ITEM_DONE" data-arg="${i.id}">Mark Done</button>
+            </li>`,
+          )
+          .join('')}
+      </ul>
+    `;
+  }
+
+  function renderRawActions() {
+    const el = document.getElementById('raw-actions');
+    el.innerHTML = `
+      <h2>Raw actions (debug / try the illegal stuff)</h2>
+      <p class="muted" style="margin-top:0">Every action is always callable here, even ones the mock UI above wouldn't let you trigger — useful for poking at edge cases directly.</p>
+      <div class="grid2">
+        <div>
+          <div class="section-label">Open a Module (works even if Done — watch what happens)</div>
+          ${state.modules.map((m) => `<button data-action="SELECT_MODULE" data-arg="${m.id}">Open ${escapeHtml(m.title)}${m.done ? ' (Done)' : ''}</button>`).join(' ')}
+          <div class="section-label">Mark / Un-mark a Module Done</div>
+          ${state.modules
+            .map(
+              (m) =>
+                `<button data-action="${m.done ? 'UNMARK_MODULE_DONE' : 'MARK_MODULE_DONE'}" data-arg="${m.id}">${m.done ? 'Un-mark' : 'Mark Done'}: ${escapeHtml(m.title)}</button>`,
+            )
+            .join(' ')}
+        </div>
+        <div>
+          <div class="section-label">Mark / Un-mark a Lesson/Assignment Done</div>
+          ${state.items
+            .map(
+              (i) =>
+                `<button data-action="${i.done ? 'UNMARK_ITEM_DONE' : 'MARK_ITEM_DONE'}" data-arg="${i.id}">${i.done ? 'Un-mark' : 'Mark Done'}: ${escapeHtml(i.title)}</button>`,
+            )
+            .join(' ')}
+        </div>
+      </div>
+      <p style="margin-top:16px;"><button data-action="RESET">Reset everything</button></p>
+    `;
+  }
+
+  document.body.addEventListener('click', (event) => {
+    const btn = event.target.closest('button[data-action]');
+    if (!btn) return;
+    const action = btn.dataset.action;
+    const arg = btn.dataset.arg;
+    switch (action) {
+      case 'VIEW_SCENARIO':
+        activeScenarioId = arg;
+        renderWalkthroughs();
+        return;
+      case 'START_SCENARIO':
+        startScenario(arg);
+        return;
+      case 'RUN_STEP': {
+        const [id, indexStr] = arg.split(':');
+        runScenarioStep(id, Number(indexStr));
+        return;
+      }
+      case 'SELECT_MODULE':
+        dispatch({ type: 'SELECT_MODULE', moduleId: arg });
+        return;
+      case 'SET_TAB':
+        dispatch({ type: 'SET_TAB', tab: arg });
+        return;
+      case 'GO_LANDING':
+        dispatch({ type: 'GO_LANDING' });
+        return;
+      case 'GO_FINISHED':
+        dispatch({ type: 'GO_FINISHED' });
+        return;
+      case 'MARK_MODULE_DONE':
+        dispatch({ type: 'MARK_MODULE_DONE', moduleId: arg });
+        return;
+      case 'UNMARK_MODULE_DONE':
+        dispatch({ type: 'UNMARK_MODULE_DONE', moduleId: arg });
+        return;
+      case 'MARK_ITEM_DONE':
+        dispatch({ type: 'MARK_ITEM_DONE', itemId: arg });
+        return;
+      case 'UNMARK_ITEM_DONE':
+        dispatch({ type: 'UNMARK_ITEM_DONE', itemId: arg });
+        return;
+      case 'RESET':
+        state = createInitialState();
+        lastNote = null;
+        render();
+        return;
+    }
+  });
+
+  render();
+</script>
+</body>
+</html>
