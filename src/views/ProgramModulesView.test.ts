@@ -10,7 +10,7 @@ const SIX_ITEM_TYPES_FIXTURE = [
     id: 101,
     name: 'Module 01',
     position: 1,
-    items_count: 6,
+    items_count: 8,
     items: [
       { id: 1, type: 'SubHeader', title: 'Getting started' },
       {
@@ -43,6 +43,18 @@ const SIX_ITEM_TYPES_FIXTURE = [
         type: 'ExternalTool',
         title: 'Playground',
         html_url: `${CANVAS_ORIGIN}/courses/585/modules/items/6`,
+      },
+      {
+        id: 8,
+        type: 'File',
+        title: 'Slide deck',
+        html_url: `${CANVAS_ORIGIN}/courses/585/files/8`,
+      },
+      {
+        id: 9,
+        type: 'Discussion',
+        title: 'Q&A thread',
+        html_url: `${CANVAS_ORIGIN}/courses/585/discussion_topics/9`,
       },
     ],
   },
@@ -113,13 +125,19 @@ describe('ProgramModulesView', () => {
 
     const quizLink = wrapper.find('a[href*="/courses/585/modules/items/5"]')
     const toolLink = wrapper.find('a[href*="/courses/585/modules/items/6"]')
+    const fileLink = wrapper.find('a[href*="/courses/585/files/8"]')
+    const discussionLink = wrapper.find(
+      'a[href*="/courses/585/discussion_topics/9"]',
+    )
     const urlLink = wrapper.find(
       'a[href="https://developer.mozilla.org/en-US/docs/Web"]',
     )
     expect(quizLink.text()).toContain('Chapter check')
     expect(toolLink.text()).toContain('Playground')
+    expect(fileLink.text()).toContain('Slide deck')
+    expect(discussionLink.text()).toContain('Q&A thread')
     expect(urlLink.text()).toContain('Useful docs')
-    for (const link of [quizLink, toolLink, urlLink]) {
+    for (const link of [quizLink, toolLink, fileLink, discussionLink, urlLink]) {
       expect(link.attributes('target')).toBe('_blank')
     }
     expect(wrapper.text()).not.toContain('Reading')

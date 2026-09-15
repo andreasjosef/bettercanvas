@@ -53,37 +53,42 @@ onMounted(async () => {
         </h2>
         <ol class="m-0 list-none p-0 flex flex-col">
           <li
-            v-for="item in module_.items ?? []"
-            :key="item.id"
+            v-for="mod in module_.items ?? []"
+            :key="mod.id"
           >
-            <template v-if="item.type === 'SubHeader'">
+            <template v-if="mod.type === 'SubHeader'">
               <span
                 data-testid="subheader-divider"
                 class="block border-b border-border pb-1 mt-4 font-heading text-heading text-sm uppercase tracking-wide"
               >
-                {{ item.title }}
+                {{ mod.title }}
               </span>
             </template>
-            <template v-else-if="item.type === 'Page' || item.type === 'Assignment'">
+            <template v-else-if="mod.type === 'Page' || mod.type === 'Assignment'">
               <RouterLink
                 :to="{
                   name: 'reading',
-                  params: { programId, itemId: String(item.id) },
+                  params: { programId, itemId: String(mod.id) },
                 }"
                 class="block py-2 border-b border-border text-accent hover:opacity-90"
               >
-                {{ item.title }}
+                {{ mod.title }}
               </RouterLink>
             </template>
-            <template v-else>
+            <template v-else-if="canvasItemHref(mod)">
               <a
-                :href="canvasItemHref(item)"
+                :href="canvasItemHref(mod)"
                 target="_blank"
                 rel="noopener noreferrer"
                 class="block py-2 border-b border-border text-text-muted hover:opacity-90"
               >
-                {{ item.title }} ↗
+                {{ mod.title }} ↗
               </a>
+            </template>
+            <template v-else>
+              <span class="block py-2 border-b border-border text-text-muted">
+                {{ mod.title }}
+              </span>
             </template>
           </li>
         </ol>
