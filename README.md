@@ -40,6 +40,6 @@ per-request through the proxy — it is never stored or read server-side
   navigation. Static assets (JS/CSS bundle files) are still served
   directly and are unaffected by this fallback.
 
-A push to `main` (or a `vercel deploy`/`vercel --prod` from this directory,
-already linked via `.vercel/project.json`) is sufficient to produce a
-working deploy — no manual post-deploy steps.
+A push to `main` (via Vercel's Git integration) or a `vercel deploy`/
+`vercel --prod` from a directory linked to the project (`vercel link`) is
+sufficient to produce a working deploy — no manual post-deploy steps.
