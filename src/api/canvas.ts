@@ -159,6 +159,16 @@ export interface Assignment {
   due_at: string | null
 }
 
+export async function fetchAssignments(
+  token: string,
+  courseId: number,
+): Promise<Assignment[]> {
+  return fetchAllPages<Assignment>(
+    token,
+    `/api/v1/courses/${courseId}/assignments?order_by=due_at&per_page=100`,
+  )
+}
+
 export async function fetchNextDueAssignment(
   token: string,
   courseId: number,
