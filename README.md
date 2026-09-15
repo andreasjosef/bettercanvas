@@ -34,11 +34,16 @@ per-request through the proxy — it is never stored or read server-side
 `vercel.json` defines the routing needed for the deploy to work:
 
 - `/api/v1/*` rewrites to the `canvas-proxy` function.
-- Every other path rewrites to `/index.html` so client-side routes (e.g.
-  `/programs/:id/modules`, `/settings`, `/previous-lectures`) resolve
-  correctly on a direct load or page refresh, not just on in-app
-  navigation. Static assets (JS/CSS bundle files) are still served
-  directly and are unaffected by this fallback.
+- Each client-side route (`/connect`, `/picker`, `/settings`,
+  `/previous-lectures`, `/programs/:path*`) has its own rewrite to
+  `/index.html`, so a direct load or page refresh on that route resolves
+  correctly, not just in-app navigation. `/` is served as `index.html`
+  directly, needing no rewrite.
+
+Adding a new top-level client-side route (see `src/router/index.ts`)
+means adding its rewrite here too — there's no catch-all fallback, by
+design (a broad `/(.*)` rewrite has caused problems on this project
+before).
 
 A push to `main` (via Vercel's Git integration) or a `vercel deploy`/
 `vercel --prod` from a directory linked to the project (`vercel link`) is
