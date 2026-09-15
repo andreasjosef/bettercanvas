@@ -36,6 +36,10 @@ const MODULES_FIXTURE = [
 
 const PAGE_BODY = '<h2>Composables</h2><p>A composable owns state.</p>'
 const ASSIGNMENT_BODY = '<p>Build a small store.</p>'
+const PAGE_BODY_WITH_CODE =
+  '<h2>Composables</h2>' +
+  '<p>A composable owns state.</p>' +
+  '<pre><code>const greet = (name) => { return "hi " + name; }</code></pre>'
 const MALICIOUS_PAGE_BODY =
   '<p>Hi</p><script>alert("xss")</script>' +
   '<img src="https://canvas.example/cat.png" onerror="steal()">'
@@ -59,6 +63,16 @@ function stubFetchByPath(
       return Promise.resolve(jsonResponse(MODULES_FIXTURE))
     }
     return Promise.reject(new Error(`unexpected fetch: ${url}`))
+  })
+}
+
+function stubPageBody(fetchMock: ReturnType<typeof vi.fn>, body: string): void {
+  stubFetchByPath(fetchMock, {
+    '/pages/intro-to-vue': jsonResponse({
+      url: 'intro-to-vue',
+      title: 'Intro to Vue',
+      body,
+    }),
   })
 }
 
@@ -173,6 +187,54 @@ describe('ReadingView', () => {
     expect(router.currentRoute.value.name).toBe('reading')
     expect(wrapper.text()).toContain('Could not load')
     expect(wrapper.find('article').exists()).toBe(false)
+  })
+
+  it('highlights an unlabeled code block in the rendered body using automatic language detection', async () => {
+    stubPageBody(fetchMock, PAGE_BODY_WITH_CODE)
+    const { wrapper } = await mountAppAtPath('/programs/585/read/2')
+
+    const article = wrapper.find('article')
+    const highlighted = article.find('code.hljs')
+    expect(highlighted.exists()).toBe(true)
+    expect(highlighted.classes()).toContain('language-javascript')
+    expect(highlighted.find('.hljs-keyword').text()).toBe('const')
+    // scoped to the reading-view content only — a decoy block outside the
+    // rendered content stays untouched (no document-wide scan)
+    const decoy = document.createElement('pre')
+    decoy.innerHTML = '<code>const outside = true;</code>'
+    document.body.appendChild(decoy)
+    expect(decoy.querySelector('code')?.className).toBe('')
+    decoy.remove()
+  })
+
+  it('applies the shipped highlight theme stylesheet when content renders', async () => {
+    stubPageBody(fetchMock, PAGE_BODY_WITH_CODE)
+    await mountAppAtPath('/programs/585/read/2')
+
+    const link = document.querySelector('#hljs-theme-stylesheet')
+    expect(link).not.toBeNull()
+    expect(link?.getAttribute('href')).toBe('/hljs-themes/warm-dark.css')
+  })
+
+  it('exposes a per-block language override that re-highlights the block', async () => {
+    stubPageBody(fetchMock, PAGE_BODY_WITH_CODE)
+    const { wrapper } = await mountAppAtPath('/programs/585/read/2')
+
+    const article = wrapper.find('article')
+    const select = article.find('select.code-lang-select')
+    expect(select.exists()).toBe(true)
+    expect(select.attributes()['aria-label']).toBe('Code language')
+
+    const code = article.find('code.hljs')
+    const spansBefore = code.findAll('span').length
+    expect(spansBefore).toBeGreaterThan(0)
+    // the rendered highlighting itself changes, not just a class
+    await select.setValue('plaintext')
+    expect(code.classes()).toContain('language-plaintext')
+    expect(code.findAll('span').length).toBe(0)
+    await select.setValue('auto')
+    expect(code.classes()).toContain('language-javascript')
+    expect(code.findAll('span').length).toBeGreaterThan(0)
   })
 
   it('styles typography and spacing only through the token layer — no raw hex, px, or rem sizes', async () => {
