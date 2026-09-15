@@ -1,10 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { flushPromises } from '@vue/test-utils'
 import {
   assignmentsResponse,
   mountAppAtPath,
   type FakeAssignment,
 } from '../test/appHarness'
 import { TOKEN_STORAGE_KEY } from '../token'
+import { savePrograms } from '../programs'
 
 const FIXED_NOW = new Date('2026-09-15T10:00:00Z')
 
@@ -41,6 +43,7 @@ describe('ProgramAssignmentsView', () => {
     vi.setSystemTime(FIXED_NOW)
     localStorage.clear()
     localStorage.setItem(TOKEN_STORAGE_KEY, 'token123')
+    savePrograms([{ courseId: 585, name: 'Reading & Writing', archived: false }])
     fetchMock = vi.fn()
     vi.stubGlobal('fetch', fetchMock)
   })
@@ -48,6 +51,35 @@ describe('ProgramAssignmentsView', () => {
   afterEach(() => {
     vi.useRealTimers()
     vi.unstubAllGlobals()
+  })
+
+  it('shows the Program\'s name as the hero heading instead of a generic "Assignments" label', async () => {
+    fetchMock.mockResolvedValue(assignmentsResponse(DUE_DATE_GROUPING_FIXTURE))
+    const { wrapper } = await mountAppAtPath('/programs/585/assignments')
+
+    expect(wrapper.find('h1').text()).toBe('Reading & Writing')
+  })
+
+  it('offers a tab bar under the heading with Assignments active and navigation to Modules, preserving the Program', async () => {
+    fetchMock.mockResolvedValue(assignmentsResponse(DUE_DATE_GROUPING_FIXTURE))
+    const { wrapper, router } = await mountAppAtPath('/programs/585/assignments')
+
+    const tabs = wrapper.find('[data-testid="program-tabs"]')
+    expect(tabs.exists()).toBe(true)
+
+    const modulesTab = tabs.find('[data-testid="tab-modules"]')
+    const assignmentsTab = tabs.find('[data-testid="tab-assignments"]')
+    expect(modulesTab.text()).toBe('Modules')
+    expect(assignmentsTab.text()).toBe('Assignments')
+    expect(assignmentsTab.attributes('aria-current')).toBe('page')
+    expect(modulesTab.attributes('aria-current')).toBeUndefined()
+
+    await modulesTab.trigger('click')
+    await flushPromises()
+    expect(router.currentRoute.value.name).toBe('program-modules')
+    expect(
+      (router.currentRoute.value.params as Record<string, string>).programId,
+    ).toBe('585')
   })
 
   it('groups the Program\'s Assignments into today / this-week / later by due_at, fetching through the proxy with the token', async () => {

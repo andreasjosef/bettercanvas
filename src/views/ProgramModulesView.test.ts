@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import { modulesResponse, mountAppAtPath } from '../test/appHarness'
+import { savePrograms } from '../programs'
 import { TOKEN_STORAGE_KEY } from '../token'
 
 const CANVAS_ORIGIN = 'https://chasacademy.instructure.com'
@@ -82,6 +83,7 @@ describe('ProgramModulesView', () => {
   beforeEach(() => {
     localStorage.clear()
     localStorage.setItem(TOKEN_STORAGE_KEY, 'token123')
+    savePrograms([{ courseId: 585, name: 'Vue & the Modern Web', archived: false }])
     fetchMock = vi.fn()
     vi.stubGlobal('fetch', fetchMock)
   })
@@ -104,6 +106,42 @@ describe('ProgramModulesView', () => {
     const secondModuleIndex = text.indexOf('Module 02')
     expect(firstModuleIndex).toBeGreaterThan(-1)
     expect(secondModuleIndex).toBeGreaterThan(firstModuleIndex)
+  })
+
+  it('shows the Program\'s name as the hero heading instead of a generic "Modules" label', async () => {
+    fetchMock.mockResolvedValue(modulesResponse(SIX_ITEM_TYPES_FIXTURE))
+    const { wrapper } = await mountAppAtPath('/programs/585/modules')
+
+    expect(wrapper.find('h1').text()).toBe('Vue & the Modern Web')
+  })
+
+  it('offers a tab bar under the heading with Modules active and navigation to Assignments, preserving the Program', async () => {
+    fetchMock.mockResolvedValue(modulesResponse(SIX_ITEM_TYPES_FIXTURE))
+    const { wrapper, router } = await mountAppAtPath('/programs/585/modules')
+
+    const tabs = wrapper.find('[data-testid="program-tabs"]')
+    expect(tabs.exists()).toBe(true)
+
+    const modulesTab = tabs.find('[data-testid="tab-modules"]')
+    const assignmentsTab = tabs.find('[data-testid="tab-assignments"]')
+    expect(modulesTab.text()).toBe('Modules')
+    expect(assignmentsTab.text()).toBe('Assignments')
+    expect(modulesTab.attributes('aria-current')).toBe('page')
+    expect(assignmentsTab.attributes('aria-current')).toBeUndefined()
+
+    await assignmentsTab.trigger('click')
+    await flushPromises()
+    expect(router.currentRoute.value.name).toBe('program-assignments')
+    expect(
+      (router.currentRoute.value.params as Record<string, string>).programId,
+    ).toBe('585')
+  })
+
+  it('falls back to a generic heading when the Program is not in the stored list', async () => {
+    fetchMock.mockResolvedValue(modulesResponse([]))
+    const { wrapper } = await mountAppAtPath('/programs/999/modules')
+
+    expect(wrapper.find('h1').text()).toBe('Modules')
   })
 
   it('routes Page and Assignment items toward the reading view', async () => {

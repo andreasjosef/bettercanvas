@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { fetchAssignments, type Assignment } from '../api/canvas'
 import { loadToken } from '../token'
+import ProgramTabs from '../components/ProgramTabs.vue'
 
 const props = defineProps<{ programId: string }>()
 
@@ -87,7 +88,7 @@ onMounted(async () => {
 
 <template>
   <main class="flex min-h-screen flex-col items-center p-4 gap-4">
-    <h1 class="m-0 font-heading text-heading text-2xl">Assignments</h1>
+    <ProgramTabs :program-id="programId" active="assignments" />
     <p v-if="loading" class="m-0 text-text-muted">Loading…</p>
     <p v-else-if="failed" class="m-0 text-danger">
       Could not load assignments.
