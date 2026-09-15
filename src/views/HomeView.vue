@@ -82,6 +82,12 @@ onMounted(async () => {
     >
       Manage Programs
     </RouterLink>
+    <RouterLink
+      :to="{ name: 'previous-lectures' }"
+      class="no-underline text-sm text-accent hover:opacity-90"
+    >
+      Previous Lectures
+    </RouterLink>
     <p v-if="loading" class="m-0 text-text-muted">Loading…</p>
     <p v-else-if="!hasPrograms" class="m-0 text-text-muted flex flex-col items-center gap-2">
       No active Programs yet.

@@ -7,12 +7,18 @@ import ProgramModulesView from '../views/ProgramModulesView.vue'
 import ProgramAssignmentsView from '../views/ProgramAssignmentsView.vue'
 import ReadingView from '../views/ReadingView.vue'
 import SettingsView from '../views/SettingsView.vue'
+import PreviousLecturesView from '../views/PreviousLecturesView.vue'
 
 export const routes = [
   { path: '/', name: 'home', component: HomeView },
   { path: '/connect', name: 'connect', component: ConnectView },
   { path: '/picker', name: 'picker', component: PickerView },
   { path: '/settings', name: 'settings', component: SettingsView },
+  {
+    path: '/previous-lectures',
+    name: 'previous-lectures',
+    component: PreviousLecturesView,
+  },
   {
     path: '/programs/:programId/modules',
     name: 'program-modules',
