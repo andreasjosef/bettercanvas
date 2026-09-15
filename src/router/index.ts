@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { setAuthFailureHandler } from '../api/canvas'
 import ConnectView from '../views/ConnectView.vue'
 import PickerView from '../views/PickerView.vue'
 import HomeView from '../views/HomeView.vue'
@@ -31,6 +32,16 @@ export const routes = [
   { path: '/:pathMatch(.*)*', redirect: { name: 'home' } },
 ]
 
+export const RECONNECT_REASON = 'token-invalid'
+
 export function createAppRouter(history = createWebHistory(import.meta.env.BASE_URL)) {
-  return createRouter({ history, routes })
+  const router = createRouter({ history, routes })
+  setAuthFailureHandler(() => {
+    if (router.currentRoute.value.name === 'connect') return
+    void router.replace({
+      name: 'connect',
+      query: { reason: RECONNECT_REASON },
+    })
+  })
+  return router
 }

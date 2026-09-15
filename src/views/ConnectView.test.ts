@@ -53,8 +53,10 @@ describe('ConnectView', () => {
     const alert = wrapper.find('[role="alert"]')
     expect(alert.exists()).toBe(true)
     expect(alert.text()).not.toBe('')
+    expect(alert.text()).toContain('Canvas rejected this token')
     expect(localStorage.getItem(TOKEN_STORAGE_KEY)).toBeNull()
     expect(router.currentRoute.value.name).toBe('connect')
+    expect(router.currentRoute.value.query).toEqual({})
   })
 
   it('on an unreachable proxy (200 non-JSON, e.g. no deploy/rewrite in front of it): shows a distinct diagnostic message, not "Canvas rejected"', async () => {

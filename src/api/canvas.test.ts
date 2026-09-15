@@ -1,8 +1,9 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from 'vitest'
 import {
   fetchCourses,
   fetchNextDueAssignment,
   parseNextLink,
+  setAuthFailureHandler,
 } from './canvas.ts'
 
 function htmlSpaFallbackResponse(): Response {
@@ -154,6 +155,58 @@ describe('fetchNextDueAssignment', () => {
     await expect(
       fetchNextDueAssignment('bad-token', 585),
     ).rejects.toMatchObject({ name: 'CanvasError', status: 401 })
+  })
+})
+
+describe('auth-failure handler', () => {
+  let fetchMock: ReturnType<typeof vi.fn>
+  let handler: Mock<() => void>
+
+  beforeEach(() => {
+    fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+    handler = vi.fn()
+    setAuthFailureHandler(handler)
+  })
+
+  afterEach(() => {
+    setAuthFailureHandler(null)
+    vi.unstubAllGlobals()
+  })
+
+  it('invokes the handler once for a 401 and still throws CanvasError', async () => {
+    fetchMock.mockResolvedValue(
+      jsonResponse({ error: 'Invalid token' }, { status: 401 }),
+    )
+
+    await expect(fetchCourses('bad-token')).rejects.toMatchObject({
+      name: 'CanvasError',
+      status: 401,
+    })
+    expect(handler).toHaveBeenCalledOnce()
+  })
+
+  it('invokes the handler for a 403 as well', async () => {
+    fetchMock.mockResolvedValue(
+      jsonResponse({ error: 'Forbidden' }, { status: 403 }),
+    )
+
+    await expect(fetchNextDueAssignment('bad-token', 585)).rejects.toMatchObject(
+      { name: 'CanvasError', status: 403 },
+    )
+    expect(handler).toHaveBeenCalledOnce()
+  })
+
+  it('does not invoke the handler for other error statuses', async () => {
+    fetchMock.mockResolvedValue(
+      jsonResponse({ error: 'Boom' }, { status: 500 }),
+    )
+
+    await expect(fetchCourses('token123')).rejects.toMatchObject({
+      name: 'CanvasError',
+      status: 500,
+    })
+    expect(handler).not.toHaveBeenCalled()
   })
 })
 

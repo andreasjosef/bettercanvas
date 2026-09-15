@@ -22,6 +22,14 @@ export interface Course {
   name: string
 }
 
+export type AuthFailureHandler = () => void
+
+let authFailureHandler: AuthFailureHandler | null = null
+
+export function setAuthFailureHandler(handler: AuthFailureHandler | null): void {
+  authFailureHandler = handler
+}
+
 async function canvasFetch(token: string, proxyPath: string): Promise<Response> {
   const response = await fetch(proxyPath, {
     method: 'GET',
@@ -31,6 +39,9 @@ async function canvasFetch(token: string, proxyPath: string): Promise<Response> 
     },
   })
   if (!response.ok) {
+    if (response.status === 401 || response.status === 403) {
+      authFailureHandler?.()
+    }
     throw new CanvasError(response.status)
   }
   const contentType = response.headers.get('content-type') ?? ''

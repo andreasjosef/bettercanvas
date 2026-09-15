@@ -89,7 +89,7 @@ describe('PickerView', () => {
 
   it('on a failed Courses fetch: shows an inline error and persists nothing', async () => {
     localStorage.setItem(TOKEN_STORAGE_KEY, 'token123')
-    fetchMock.mockResolvedValue(new Response('Invalid token', { status: 401 }))
+    fetchMock.mockResolvedValue(new Response('Boom', { status: 500 }))
     const { wrapper, router } = await mountAppAtPath('/picker')
 
     const alert = wrapper.find('[role="alert"]')
