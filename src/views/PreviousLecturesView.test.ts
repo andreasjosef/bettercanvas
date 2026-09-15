@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
-import { mountAppAtPath } from '../test/appHarness'
+import { expectPlainListRows, mountAppAtPath } from '../test/appHarness'
 import { savePrograms } from '../programs'
 import { TOKEN_STORAGE_KEY } from '../token'
 
@@ -37,6 +37,16 @@ describe('PreviousLecturesView', () => {
     await archivedLink.trigger('click')
     await flushPromises()
     expect(wrapper.text()).toContain('Modules')
+  })
+
+  it('renders Archived Programs as plain divider-separated rows, not cards', async () => {
+    savePrograms([
+      { courseId: 612, name: 'Administration Materials Bank', archived: true },
+      { courseId: 640, name: 'Game Design Fall 2025', archived: true },
+    ])
+    const { wrapper } = await mountAppAtPath('/previous-lectures')
+
+    expectPlainListRows(wrapper, 'ul > li', 2)
   })
 
   it('an Archived Program opens its Modules view the same as an Active one', async () => {

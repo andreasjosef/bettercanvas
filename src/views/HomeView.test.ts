@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
-import { assignmentsResponse, mountAppAtPath } from '../test/appHarness'
+import { assignmentsResponse, expectPlainListRows, mountAppAtPath } from '../test/appHarness'
 import { savePrograms } from '../programs'
 import { TOKEN_STORAGE_KEY } from '../token'
 
@@ -90,6 +90,17 @@ describe('HomeView', () => {
     const settingsLink = wrapper.find('main a[href="/settings"]')
     expect(settingsLink.exists()).toBe(true)
     expect(settingsLink.text()).toContain('Manage Programs')
+  })
+
+  it('renders Active Programs as plain divider-separated rows, not cards', async () => {
+    savePrograms([
+      { courseId: 585, name: 'Programmeringäsning', archived: false },
+      { courseId: 619, name: 'CodeForGood', archived: false },
+    ])
+    fetchMock.mockResolvedValue(assignmentsResponse([]))
+    const { wrapper } = await mountAppAtPath('/')
+
+    expectPlainListRows(wrapper, 'ul > li', 2)
   })
 
   it('each Active Program opens its Modules view', async () => {
