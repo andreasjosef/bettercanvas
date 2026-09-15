@@ -1,5 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { fetchCourses, parseNextLink } from './canvas.ts'
+import {
+  fetchCourses,
+  fetchNextDueAssignment,
+  parseNextLink,
+} from './canvas.ts'
 
 function htmlSpaFallbackResponse(): Response {
   return new Response(
@@ -98,6 +102,58 @@ describe('fetchCourses', () => {
       name: 'ProxyUnreachableError',
     })
     expect(fetchMock).toHaveBeenCalledOnce()
+  })
+})
+
+describe('fetchNextDueAssignment', () => {
+  let fetchMock: ReturnType<typeof vi.fn>
+
+  beforeEach(() => {
+    fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('GETs the Course\'s future assignments, soonest due first, one per page, through the proxy', async () => {
+    fetchMock.mockResolvedValue(
+      jsonResponse([
+        { id: 9, name: 'Lab 2', due_at: '2026-09-20T13:00:00Z' },
+      ]),
+    )
+
+    const nextDue = await fetchNextDueAssignment('token123', 585)
+
+    expect(fetchMock).toHaveBeenCalledOnce()
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit]
+    expect(url).toBe(
+      '/api/v1/courses/585/assignments?bucket=future&order_by=due_date&per_page=1',
+    )
+    expect(url).not.toContain(UPSTREAM_ORIGIN)
+    expect(init.headers).toMatchObject({ Authorization: 'Bearer token123' })
+    expect(nextDue).toEqual({
+      id: 9,
+      name: 'Lab 2',
+      due_at: '2026-09-20T13:00:00Z',
+    })
+  })
+
+  it('returns null when the Course has no future-dated Assignments', async () => {
+    fetchMock.mockResolvedValue(jsonResponse([]))
+
+    await expect(fetchNextDueAssignment('token123', 585)).resolves.toBeNull()
+  })
+
+  it('throws a CanvasError carrying the status for a 401 response', async () => {
+    fetchMock.mockResolvedValue(
+      jsonResponse({ error: 'Invalid token' }, { status: 401 }),
+    )
+
+    await expect(
+      fetchNextDueAssignment('bad-token', 585),
+    ).rejects.toMatchObject({ name: 'CanvasError', status: 401 })
   })
 })
 

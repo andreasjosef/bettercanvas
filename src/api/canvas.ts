@@ -52,6 +52,24 @@ export async function fetchCourses(token: string): Promise<Course[]> {
   return courses
 }
 
+export interface Assignment {
+  id: number
+  name: string
+  due_at: string | null
+}
+
+export async function fetchNextDueAssignment(
+  token: string,
+  courseId: number,
+): Promise<Assignment | null> {
+  const response = await canvasFetch(
+    token,
+    `/api/v1/courses/${courseId}/assignments?bucket=future&order_by=due_date&per_page=1`,
+  )
+  const page = (await response.json()) as Assignment[]
+  return page[0] ?? null
+}
+
 export function proxyPathFromNextLink(linkHeader: string | null): string | null {
   const next = parseNextLink(linkHeader)
   if (!next) return null
