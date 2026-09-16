@@ -109,13 +109,17 @@ export function isModuleDone(courseId: number, module: CourseModule): boolean {
   return doneAble.length > 0 && doneAble.every((item) => isLeafDone(courseId, item))
 }
 
+function setItemDone(courseId: number, item: ModuleItem, done: boolean): void {
+  if (item.type === 'Page') {
+    setLessonDone(courseId, item.id, done)
+  } else if (item.type === 'Assignment' && typeof item.content_id === 'number') {
+    setAssignmentDone(courseId, item.content_id, done)
+  }
+}
+
 /** Marks one Done-able leaf (a Lesson or an Assignment) Done; ignores other item types. */
 export function markItemDone(courseId: number, item: ModuleItem): void {
-  if (item.type === 'Page') {
-    setLessonDone(courseId, item.id, true)
-  } else if (item.type === 'Assignment' && typeof item.content_id === 'number') {
-    setAssignmentDone(courseId, item.content_id, true)
-  }
+  setItemDone(courseId, item, true)
 }
 
 /**
@@ -126,6 +130,23 @@ export function markItemDone(courseId: number, item: ModuleItem): void {
 export function markModuleDone(courseId: number, module: CourseModule): void {
   for (const item of module.items ?? []) {
     if (isDoneAbleItem(item)) markItemDone(courseId, item)
+  }
+}
+
+/** Un-marks one Done-able leaf (a Lesson or an Assignment) back to not-Done. */
+export function unmarkItemDone(courseId: number, item: ModuleItem): void {
+  setItemDone(courseId, item, false)
+}
+
+/**
+ * Sugar for un-marking every one of the Module's Done-able leaves at once,
+ * pulling the derived Module back out of Done. Because Module Done is always
+ * derived, un-marking a single child is already sufficient to pull the Module
+ * out on its own — while leaving every other already-Done child untouched.
+ */
+export function unmarkModuleDone(courseId: number, module: CourseModule): void {
+  for (const item of module.items ?? []) {
+    if (isDoneAbleItem(item)) unmarkItemDone(courseId, item)
   }
 }
 
