@@ -1,7 +1,14 @@
+import { ref } from 'vue'
 import type { CourseModule, ModuleItem } from './api/canvas.ts'
 import type { Program } from './programs.ts'
 
 export const DONE_STORAGE_KEY = 'canvas.done'
+
+/**
+ * Bumped on every Done mutation so view computeds that read the (otherwise
+ * non-reactive) localStorage-backed Done state re-run.
+ */
+export const doneVersion = ref(0)
 
 export interface DoneEntry {
   /** Module-item ids of Done Lessons (Page-type items). */
@@ -60,6 +67,7 @@ function updateEntry(courseId: number, update: (entry: DoneEntry) => void): void
   update(entry)
   state[courseId] = entry
   saveDoneState(state)
+  doneVersion.value++
 }
 
 export function isLessonDone(courseId: number, moduleItemId: number): boolean {
@@ -99,6 +107,26 @@ function isLeafDone(courseId: number, item: ModuleItem): boolean {
 export function isModuleDone(courseId: number, module: CourseModule): boolean {
   const doneAble = (module.items ?? []).filter(isDoneAbleItem)
   return doneAble.length > 0 && doneAble.every((item) => isLeafDone(courseId, item))
+}
+
+/** Marks one Done-able leaf (a Lesson or an Assignment) Done; ignores other item types. */
+export function markItemDone(courseId: number, item: ModuleItem): void {
+  if (item.type === 'Page') {
+    setLessonDone(courseId, item.id, true)
+  } else if (item.type === 'Assignment' && typeof item.content_id === 'number') {
+    setAssignmentDone(courseId, item.content_id, true)
+  }
+}
+
+/**
+ * Sugar for marking every one of the Module's Done-able leaves Done at once;
+ * the Module's own Done state stays derived and is never stored. A Module with
+ * no Done-able leaves is left untouched (it can never be Done).
+ */
+export function markModuleDone(courseId: number, module: CourseModule): void {
+  for (const item of module.items ?? []) {
+    if (isDoneAbleItem(item)) markItemDone(courseId, item)
+  }
 }
 
 /** Purges canvas.done entries for Programs not in the given selection. */
