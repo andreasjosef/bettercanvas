@@ -1,26 +1,97 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
-import { RouterLink, useRouter } from 'vue-router'
-import {
-  fetchAssignmentDescription,
-  fetchPageBody,
-  locateModuleItem,
-  type ModuleItem,
-} from '../api/canvas'
-import { loadToken } from '../token'
+import { computed, ref, watch } from 'vue'
+import { RouterLink } from 'vue-router'
+import { useQuery } from '@tanstack/vue-query'
+import type { ModuleItem } from '../api/canvas'
+import { canvasQueryOptions } from '../api/keys'
+import { useCanvasToken } from '../api/useCanvasToken'
 import { sanitizeCanvasHtml } from '../sanitize'
 import { highlightCodeBlocks } from '../highlight'
 import { applyHighlightTheme, DEFAULT_HIGHLIGHT_THEME } from '../highlightTheme'
 
 const props = defineProps<{ programId: string; itemId: string }>()
 
-const router = useRouter()
-const loading = ref(true)
-const failed = ref(false)
-const notFound = ref(false)
-const item = ref<ModuleItem | null>(null)
-const moduleName = ref('')
-const rawHtml = ref('')
+const { token, tokenEnabled } = useCanvasToken()
+
+const courseId = computed(() => Number(props.programId))
+
+const modulesQuery = useQuery(
+  computed(() => ({
+    ...canvasQueryOptions.modules(courseId.value, token ?? ''),
+    enabled: tokenEnabled.value,
+  })),
+)
+
+const located = computed(() => {
+  const modules = modulesQuery.data.value
+  if (!modules) return null
+  for (const module_ of modules) {
+    const item = module_.items?.find(
+      (candidate) => candidate.id === Number(props.itemId),
+    )
+    if (item) return { item, module: module_ }
+  }
+  return null
+})
+
+const item = computed<ModuleItem | null>(() => located.value?.item ?? null)
+const moduleName = computed(() => located.value?.module.name ?? '')
+
+const pageUrl = computed(() => {
+  if (item.value?.type !== 'Page' || !item.value.page_url) return null
+  return item.value.page_url
+})
+const assignmentId = computed(() => {
+  if (item.value?.type !== 'Assignment' || !item.value.content_id) return null
+  return item.value.content_id
+})
+
+const pageBodyQuery = useQuery(
+  computed(() => ({
+    ...canvasQueryOptions.pageBody(
+      courseId.value,
+      pageUrl.value ?? '',
+      token ?? '',
+    ),
+    enabled: tokenEnabled.value && pageUrl.value !== null,
+  })),
+)
+
+const assignmentDescriptionQuery = useQuery(
+  computed(() => ({
+    ...canvasQueryOptions.assignmentDescription(
+      courseId.value,
+      assignmentId.value ?? 0,
+      token ?? '',
+    ),
+    enabled: tokenEnabled.value && assignmentId.value !== null,
+  })),
+)
+
+const contentQuery = computed(() =>
+  pageUrl.value !== null
+    ? pageBodyQuery
+    : assignmentId.value !== null
+      ? assignmentDescriptionQuery
+      : null,
+)
+
+const loading = computed(
+  () => modulesQuery.isPending.value || contentQuery.value?.isPending.value === true,
+)
+const failed = computed(
+  () => modulesQuery.isError.value || contentQuery.value?.isError.value === true,
+)
+const notFound = computed(
+  () =>
+    !modulesQuery.isPending.value &&
+    !modulesQuery.isError.value &&
+    located.value === null,
+)
+const rawHtml = computed(() => {
+  const data = contentQuery.value?.data.value
+  return typeof data === 'string' ? data : ''
+})
 const contentEl = ref<HTMLElement | null>(null)
 
 const sanitizedHtml = computed(() => sanitizeCanvasHtml(rawHtml.value))
@@ -42,43 +113,6 @@ watch(
 function isReadableType(type: ModuleItem['type']): boolean {
   return type === 'Page' || type === 'Assignment'
 }
-
-onMounted(async () => {
-  const token = loadToken()
-  if (!token) {
-    await router.replace({ name: 'connect' })
-    return
-  }
-  try {
-    const courseId = Number(props.programId)
-    const located = await locateModuleItem(token, courseId, Number(props.itemId))
-    if (!located) {
-      notFound.value = true
-      return
-    }
-    item.value = located.item
-    moduleName.value = located.module.name
-    if (located.item.type === 'Page') {
-      if (!located.item.page_url) throw new Error('Page item has no page_url')
-      rawHtml.value =
-        (await fetchPageBody(token, courseId, located.item.page_url)) ?? ''
-    } else if (located.item.type === 'Assignment') {
-      if (!located.item.content_id) {
-        throw new Error('Assignment item has no content_id')
-      }
-      rawHtml.value =
-        (await fetchAssignmentDescription(
-          token,
-          courseId,
-          located.item.content_id,
-        )) ?? ''
-    }
-  } catch {
-    failed.value = true
-  } finally {
-    loading.value = false
-  }
-})
 </script>
 
 <template>

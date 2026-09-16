@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { fetchCourses, type Course } from '../api/canvas'
-import { loadToken } from '../token'
+import { computed, ref, watchEffect } from 'vue'
+import { useQuery } from '@tanstack/vue-query'
+import type { Course } from '../api/canvas'
+import { canvasQueryOptions } from '../api/keys'
+import { useCanvasToken } from '../api/useCanvasToken'
 import type { Program } from '../programs'
 
 interface PickerEntry {
@@ -20,26 +21,30 @@ const props = defineProps<{
 
 const emit = defineEmits<{ confirm: [programs: Program[]] }>()
 
-const router = useRouter()
-const loading = ref(true)
-const error = ref<string | null>(null)
+const { token, tokenEnabled } = useCanvasToken()
+
+const query = useQuery(
+  computed(() => ({
+    ...canvasQueryOptions.courses(token ?? ''),
+    enabled: tokenEnabled.value,
+  })),
+)
+
+const loadError = computed(() =>
+  query.error.value
+    ? 'Could not load your Courses from Canvas. Check your connection and reload the page.'
+    : null,
+)
+const loading = computed(() => query.isPending.value)
+const courses = computed(() => query.data.value ?? [])
+
+// Entries live in a ref (deep-reactive) rather than a computed: the user's
+// checkbox toggles mutate entries in place, and a computed's cached value is
+// not deeply reactive, so those mutations would never re-render the form.
 const entries = ref<PickerEntry[]>([])
 
-onMounted(async () => {
-  const token = loadToken()
-  if (!token) {
-    await router.replace({ name: 'connect' })
-    return
-  }
-  try {
-    const courses = await fetchCourses(token)
-    entries.value = buildEntries(courses, props.initialPrograms ?? [])
-  } catch {
-    error.value =
-      'Could not load your Courses from Canvas. Check your connection and reload the page.'
-  } finally {
-    loading.value = false
-  }
+watchEffect(() => {
+  entries.value = buildEntries(courses.value, props.initialPrograms ?? [])
 })
 
 function buildEntries(courses: Course[], initialPrograms: Program[]): PickerEntry[] {
@@ -99,8 +104,8 @@ function confirmSelection(): void {
     <p class="m-0 text-text-muted">
       {{ description }}
     </p>
-    <p v-if="error" role="alert" class="m-0 text-sm text-danger">
-      {{ error }}
+    <p v-if="loadError" role="alert" class="m-0 text-sm text-danger">
+      {{ loadError }}
     </p>
     <p v-else-if="loading" class="m-0 text-text-muted">Loading…</p>
     <form v-else class="flex flex-col items-center gap-2 max-w-sm w-full" @submit.prevent="confirmSelection">

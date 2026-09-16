@@ -3,13 +3,14 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { createMemoryHistory } from 'vue-router'
 import App from './App.vue'
 import { createAppRouter } from './router'
+import { appPlugins } from './test/appHarness'
 import { TOKEN_STORAGE_KEY } from './token'
 
 const mountAt = async (path: string) => {
-  const router = createAppRouter(createMemoryHistory())
+  const [router, queryPlugin] = appPlugins()
   await router.push(path)
   await router.isReady()
-  const wrapper = mount(App, { global: { plugins: [router] } })
+  const wrapper = mount(App, { global: { plugins: [router, queryPlugin] } })
   return wrapper
 }
 
@@ -67,10 +68,10 @@ describe('App shell (persistent sidebar)', () => {
   })
 
   const mountAt = async (path: string) => {
-    const router = createAppRouter(createMemoryHistory())
+    const [router, queryPlugin] = appPlugins()
     await router.push(path)
     await router.isReady()
-    const wrapper = mount(App, { global: { plugins: [router] } })
+    const wrapper = mount(App, { global: { plugins: [router, queryPlugin] } })
     await flushPromises()
     return { wrapper, router }
   }

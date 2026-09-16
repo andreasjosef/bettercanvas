@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
-import { RouterLink, useRouter } from 'vue-router'
-import { fetchNextDueAssignment, type Assignment } from '../api/canvas'
+import { computed } from 'vue'
+import { RouterLink } from 'vue-router'
+import { useQueries } from '@tanstack/vue-query'
+import { canvasQueryOptions } from '../api/keys'
+import { useCanvasToken } from '../api/useCanvasToken'
 import { loadPrograms } from '../programs'
-import { loadToken } from '../token'
 
 interface ProgramRow {
   courseId: number
@@ -13,19 +14,35 @@ interface ProgramRow {
   dueAt: string | null
 }
 
-const router = useRouter()
-const loading = ref(true)
-const activePrograms = ref(loadPrograms().filter((program) => !program.archived))
-const nextDueByProgram = ref<Record<number, Assignment | null>>({})
-const failedProgramIds = ref<ReadonlySet<number>>(new Set())
-const hasPrograms = computed(() => activePrograms.value.length > 0)
+const { token, tokenEnabled } = useCanvasToken()
+
+const activePrograms = loadPrograms().filter((program) => !program.archived)
+const hasPrograms = activePrograms.length > 0
+
+const nextDueQueries = useQueries({
+  queries: () =>
+    activePrograms.map((program) => ({
+      ...canvasQueryOptions.nextDueAssignment(program.courseId, token ?? ''),
+      enabled: tokenEnabled.value && hasPrograms,
+    })),
+})
+
+const loading = computed(
+  () =>
+    tokenEnabled.value &&
+    hasPrograms &&
+    nextDueQueries.value.some((query) => query.isPending),
+)
+
 const programRows = computed<ProgramRow[]>(() =>
-  activePrograms.value.map((program) => {
-    const nextDue = nextDueByProgram.value[program.courseId] ?? null
+  activePrograms.map((program, index) => {
+    const query = nextDueQueries.value[index]
+    const failed = query.isError
+    const nextDue = query.data ?? null
     return {
       courseId: program.courseId,
       name: program.name,
-      failed: failedProgramIds.value.has(program.courseId),
+      failed,
       nextDueName: nextDue?.name ?? null,
       dueAt: nextDue?.due_at ?? null,
     }
@@ -41,36 +58,6 @@ function formatDueDate(iso: string): string {
     minute: '2-digit',
   })
 }
-
-onMounted(async () => {
-  const token = loadToken()
-  if (!token) {
-    await router.replace({ name: 'connect' })
-    return
-  }
-  if (!hasPrograms.value) {
-    loading.value = false
-    return
-  }
-  const results = await Promise.allSettled(
-    activePrograms.value.map((program) =>
-      fetchNextDueAssignment(token, program.courseId),
-    ),
-  )
-  const nextDue: Record<number, Assignment | null> = {}
-  const failed: number[] = []
-  activePrograms.value.forEach((program, index) => {
-    const result = results[index]
-    if (result && result.status === 'fulfilled') {
-      nextDue[program.courseId] = result.value
-    } else {
-      failed.push(program.courseId)
-    }
-  })
-  nextDueByProgram.value = nextDue
-  failedProgramIds.value = new Set(failed)
-  loading.value = false
-})
 </script>
 
 <template>

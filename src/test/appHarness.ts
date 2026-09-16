@@ -1,7 +1,17 @@
 import { flushPromises, mount, type DOMWrapper } from '@vue/test-utils'
+import { VueQueryPlugin } from '@tanstack/vue-query'
 import { expect } from 'vitest'
 import App from '../App.vue'
 import { createAppRouter } from '../router'
+import { createAppQueryClient } from '../api/queryClient'
+
+/** Router + Query plugin tuple shared by every full-app mount in tests. */
+export function appPlugins() {
+  return [
+    createAppRouter(),
+    [VueQueryPlugin, { queryClient: createAppQueryClient() }],
+  ] as [ReturnType<typeof createAppRouter>, [typeof VueQueryPlugin, unknown]]
+}
 
 export interface FakeCourse {
   id: number
@@ -54,10 +64,10 @@ export function modulesResponse(modules: FakeModule[]): Response {
 }
 
 export async function mountAppAtPath(path: string) {
-  const router = createAppRouter()
+  const [router, queryPlugin] = appPlugins()
   await router.push(path)
   await router.isReady()
-  const wrapper = mount(App, { global: { plugins: [router] } })
+  const wrapper = mount(App, { global: { plugins: [router, queryPlugin] } })
   await flushPromises()
   return { wrapper, router }
 }
