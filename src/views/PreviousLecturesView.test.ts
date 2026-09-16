@@ -33,10 +33,10 @@ describe('PreviousLecturesView', () => {
     expect(listText).not.toContain('Programmeringäsning')
     expect(wrapper.findAll('ul a')).toHaveLength(2)
 
-    const archivedLink = wrapper.find('ul a[href="/programs/640/modules"]')
+    const archivedLink = wrapper.find('ul a[href="/programs/640"]')
     await archivedLink.trigger('click')
     await flushPromises()
-    expect(wrapper.text()).toContain('Modules')
+    expect(wrapper.find('h1').text()).toBe('Game Design Fall 2025')
   })
 
   it('renders Archived Programs as plain divider-separated rows, not cards', async () => {
@@ -49,19 +49,19 @@ describe('PreviousLecturesView', () => {
     expectPlainListRows(wrapper, 'ul > li', 2)
   })
 
-  it('an Archived Program opens its Modules view the same as an Active one', async () => {
+  it('an Archived Program opens its Program landing view the same as an Active one', async () => {
     savePrograms([
       { courseId: 640, name: 'Game Design Fall 2025', archived: true },
     ])
     const { wrapper } = await mountAppAtPath('/previous-lectures')
 
-    const rowLink = wrapper.find('ul a[href="/programs/640/modules"]')
+    const rowLink = wrapper.find('ul a[href="/programs/640"]')
     expect(rowLink.exists()).toBe(true)
     expect(rowLink.text()).toContain('Game Design Fall 2025')
 
     await rowLink.trigger('click')
     await flushPromises()
-    expect(wrapper.text()).toContain('Modules')
+    expect(wrapper.find('h1').text()).toBe('Game Design Fall 2025')
   })
 
   it('with no Archived Programs: shows an empty state', async () => {

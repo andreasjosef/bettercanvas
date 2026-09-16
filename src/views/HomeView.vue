@@ -88,7 +88,7 @@ function formatDueDate(iso: string): string {
     <ul v-else class="m-0 w-full max-w-2xl list-none p-0 flex flex-col">
       <li v-for="row in programRows" :key="row.courseId">
         <RouterLink
-          :to="{ name: 'program-modules', params: { programId: String(row.courseId) } }"
+          :to="{ name: 'program', params: { programId: String(row.courseId) } }"
           class="block py-2 border-b border-border no-underline text-inherit text-left"
         >
           <span class="block font-heading text-heading text-lg">{{ row.name }}</span>

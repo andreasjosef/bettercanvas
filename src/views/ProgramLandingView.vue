@@ -4,7 +4,8 @@ import { useQuery } from '@tanstack/vue-query'
 import type { Assignment } from '../api/canvas'
 import { canvasQueryOptions } from '../api/keys'
 import { useCanvasToken } from '../api/useCanvasToken'
-import ProgramTabs from '../components/ProgramTabs.vue'
+import { isAssignmentDone } from '../done'
+import { findProgram } from '../programs'
 
 const props = defineProps<{ programId: string }>()
 
@@ -21,6 +22,8 @@ const query = useQuery(
 const loading = computed(() => query.isPending.value)
 const failed = computed(() => query.isError.value)
 const assignments = computed(() => query.data.value ?? [])
+
+const programName = computed(() => findProgram(props.programId)?.name ?? 'Program')
 
 type DueGroup = 'today' | 'this-week' | 'later' | 'undated'
 
@@ -68,6 +71,7 @@ const sections = computed(() => {
     undated: [],
   }
   for (const assignment of assignments.value) {
+    if (isAssignmentDone(courseId.value, assignment.id)) continue
     groups[dueGroupFor(assignment, now)].push(assignment)
   }
   return DUE_GROUPS.filter((group) => groups[group].length > 0).map((group) => {
@@ -82,13 +86,16 @@ const sections = computed(() => {
 </script>
 
 <template>
-  <main class="flex min-h-screen flex-col items-center p-4 gap-4">
-    <ProgramTabs :program-id="programId" active="assignments" />
+  <div class="w-full max-w-2xl mx-auto flex flex-col p-4 gap-4">
+    <h1 class="m-0 font-heading text-heading text-2xl">{{ programName }}</h1>
     <p v-if="loading" class="m-0 text-text-muted">Loading…</p>
     <p v-else-if="failed" class="m-0 text-danger">
       Could not load assignments.
     </p>
-    <div v-else class="w-full max-w-2xl flex flex-col gap-6">
+    <div v-else class="flex flex-col gap-6">
+      <p v-if="sections.length === 0" class="m-0 text-text-muted">
+        Nothing due — or everything due is already Done.
+      </p>
       <section
         v-for="section in sections"
         :key="section.group"
@@ -116,5 +123,5 @@ const sections = computed(() => {
         </ol>
       </section>
     </div>
-  </main>
+  </div>
 </template>

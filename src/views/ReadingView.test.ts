@@ -108,7 +108,7 @@ describe('ReadingView', () => {
     expect(urls[1]).not.toContain('chasacademy.instructure.com')
 
     expect(wrapper.find('h1').text()).toBe('Intro to Vue')
-    const backLink = wrapper.find('a[href="/programs/585/modules"]')
+    const backLink = wrapper.find('a[href="/programs/585/modules/101"]')
     expect(backLink.exists()).toBe(true)
     expect(backLink.text()).toContain('Module 01')
 

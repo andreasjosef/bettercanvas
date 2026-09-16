@@ -126,7 +126,10 @@ function isReadableType(type: ModuleItem['type']): boolean {
     </p>
     <template v-else-if="item">
       <RouterLink
-        :to="{ name: 'program-modules', params: { programId } }"
+        :to="{
+          name: 'program-module',
+          params: { programId, moduleId: String(located!.module.id) },
+        }"
         class="self-start text-text-muted no-underline hover:text-accent"
       >
         ← {{ moduleName }}
