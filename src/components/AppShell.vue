@@ -66,6 +66,7 @@ const visibleModules = computed(() => {
   <div class="flex min-h-screen">
     <aside
       data-testid="program-sidebar"
+      :aria-label="inProgram ? 'Program sections' : 'Main navigation'"
       class="w-drawer flex-none bg-surface-alt border-r border-border py-5 px-3 flex flex-col gap-1"
     >
       <RouterLink

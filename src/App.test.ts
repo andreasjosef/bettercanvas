@@ -165,7 +165,7 @@ describe('App shell (persistent sidebar)', () => {
       .toEqual(['Better Canvas', 'Previous Lectures', 'Settings'])
   })
 
-  it('navigates to Settings and Previous Lectures from the sidebar on a non-Program route', async (ctx) => {
+  it('navigates to Settings and Previous Lectures from the sidebar on a non-Program route', async () => {
     const { wrapper, router } = await mountAt('/previous-lectures')
     const sidebar = wrapper.find('aside')
     const settings = sidebar.findAll('a').find((link) => link.text() === 'Settings')
@@ -179,6 +179,5 @@ describe('App shell (persistent sidebar)', () => {
     await previousLectures?.trigger('click')
     await flushPromises()
     expect(router.currentRoute.value.name).toBe('previous-lectures')
-    void ctx
   })
 })

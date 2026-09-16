@@ -34,7 +34,6 @@ export const routes = [
   {
     path: '/programs/:programId',
     component: ProgramShell,
-    props: true,
     children: [
       {
         path: '',
