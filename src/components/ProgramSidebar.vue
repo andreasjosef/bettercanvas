@@ -4,7 +4,7 @@ import { RouterLink, useRoute } from 'vue-router'
 import { useQuery } from '@tanstack/vue-query'
 import { canvasQueryOptions } from '../api/keys'
 import { useCanvasToken } from '../api/useCanvasToken'
-import { isModuleDone } from '../done'
+import { isModuleDone, doneVersion } from '../done'
 
 const props = defineProps<{ programId: string }>()
 
@@ -20,11 +20,12 @@ const modulesQuery = useQuery(
 )
 
 const modules = computed(() => modulesQuery.data.value ?? [])
-// A Done Module is excluded from normal navigation; with no marking UI yet
-// this is trivially every Module (nothing can be Done in this ticket).
-const visibleModules = computed(() =>
-  modules.value.filter((module_) => !isModuleDone(courseId.value, module_)),
-)
+// A Done Module is excluded from normal navigation. Reading doneVersion
+// keeps this filter reactive to localStorage-backed Done changes.
+const visibleModules = computed(() => {
+  void doneVersion.value
+  return modules.value.filter((module_) => !isModuleDone(courseId.value, module_))
+})
 
 function isActive(testid: string): boolean {
   if (testid === 'sidebar-due-soon') return route.name === 'program'

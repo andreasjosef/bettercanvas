@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/vue-query'
 import type { Assignment } from '../api/canvas'
 import { canvasQueryOptions } from '../api/keys'
 import { useCanvasToken } from '../api/useCanvasToken'
-import { isAssignmentDone } from '../done'
+import { isAssignmentDone, doneVersion, setAssignmentDone } from '../done'
 import { findProgram } from '../programs'
 
 const props = defineProps<{ programId: string }>()
@@ -63,6 +63,7 @@ function formatDueDate(iso: string): string {
 }
 
 const sections = computed(() => {
+  void doneVersion.value
   const now = Date.now()
   const groups: Record<DueGroup, Assignment[]> = {
     today: [],
@@ -109,8 +110,9 @@ const sections = computed(() => {
           <li
             v-for="assignment in section.assignments"
             :key="assignment.id"
+            class="flex items-center justify-between gap-3 py-2 border-b border-border"
           >
-            <span class="block py-2 border-b border-border">
+            <span>
               <span class="block text-heading">{{ assignment.name }}</span>
               <span
                 v-if="assignment.due_at"
@@ -119,6 +121,14 @@ const sections = computed(() => {
                 Due {{ formatDueDate(assignment.due_at) }}
               </span>
             </span>
+            <button
+              type="button"
+              :data-testid="`mark-done-${assignment.id}`"
+              class="flex-none text-sm text-text-muted hover:text-heading"
+              @click="setAssignmentDone(courseId, assignment.id, true)"
+            >
+              Mark Done
+            </button>
           </li>
         </ol>
       </section>

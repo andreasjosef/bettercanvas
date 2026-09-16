@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/vue-query'
 import type { ModuleItem } from '../api/canvas'
 import { canvasQueryOptions } from '../api/keys'
 import { useCanvasToken } from '../api/useCanvasToken'
-import { isAssignmentDone, isLessonDone } from '../done'
+import { isAssignmentDone, isLessonDone, markModuleDone, doneVersion, setAssignmentDone, setLessonDone } from '../done'
 
 const props = defineProps<{ programId: string; moduleId: string }>()
 
@@ -37,6 +37,9 @@ const activeTab = computed<ModuleTab>(() =>
 )
 
 const lessons = computed(() => {
+  // doneVersion is bumped on every Done mutation; reading it keeps this
+  // filter reactive to localStorage-backed Done changes.
+  void doneVersion.value
   const items = module_.value?.items ?? []
   return items.filter(
     (item) =>
@@ -46,6 +49,7 @@ const lessons = computed(() => {
 })
 
 const assignments = computed(() => {
+  void doneVersion.value
   const items = module_.value?.items ?? []
   return items.filter(
     (item) =>
@@ -56,6 +60,18 @@ const assignments = computed(() => {
       ),
   )
 })
+
+function markItemDone(item: ModuleItem): void {
+  if (item.type === 'Page') {
+    setLessonDone(courseId.value, item.id, true)
+  } else if (item.type === 'Assignment' && typeof item.content_id === 'number') {
+    setAssignmentDone(courseId.value, item.content_id, true)
+  }
+}
+
+function markThisModuleDone(): void {
+  if (module_.value) markModuleDone(courseId.value, module_.value)
+}
 
 const visibleItems = computed(() =>
   activeTab.value === 'lessons' ? lessons.value : assignments.value,
@@ -76,9 +92,19 @@ function canvasItemHref(item: ModuleItem): string {
       That Module is not part of this Program.
     </p>
     <template v-else>
-      <h1 class="m-0 font-heading text-heading text-2xl">
-        {{ module_.name }}
-      </h1>
+      <div class="flex items-baseline justify-between gap-3">
+        <h1 class="m-0 font-heading text-heading text-2xl">
+          {{ module_.name }}
+        </h1>
+        <button
+          type="button"
+          data-testid="mark-module-done"
+          class="flex-none text-sm text-text-muted hover:text-heading"
+          @click="markThisModuleDone"
+        >
+          Mark Module Done
+        </button>
+      </div>
       <nav
         data-testid="module-tabs"
         aria-label="Module sections"
@@ -126,15 +152,27 @@ function canvasItemHref(item: ModuleItem): string {
               </span>
             </template>
             <template v-else-if="item.type === 'Page' || item.type === 'Assignment'">
-              <RouterLink
-                :to="{
-                  name: 'reading',
-                  params: { programId, itemId: String(item.id) },
-                }"
-                class="block py-2 border-b border-border text-accent hover:opacity-90"
+              <div
+                class="flex items-center justify-between gap-3 py-2 border-b border-border"
               >
-                {{ item.title }}
-              </RouterLink>
+                <RouterLink
+                  :to="{
+                    name: 'reading',
+                    params: { programId, itemId: String(item.id) },
+                  }"
+                  class="text-accent hover:opacity-90"
+                >
+                  {{ item.title }}
+                </RouterLink>
+                <button
+                  type="button"
+                  :data-testid="`mark-done-${item.id}`"
+                  class="flex-none text-sm text-text-muted hover:text-heading"
+                  @click="markItemDone(item)"
+                >
+                  Mark Done
+                </button>
+              </div>
             </template>
             <template v-else-if="canvasItemHref(item)">
               <a

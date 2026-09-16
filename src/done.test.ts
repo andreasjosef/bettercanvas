@@ -5,6 +5,7 @@ import {
   isAssignmentDone,
   isLessonDone,
   isModuleDone,
+  markModuleDone,
   purgeDoneEntries,
   setAssignmentDone,
   setLessonDone,
@@ -151,6 +152,55 @@ describe('derived Module Done', () => {
     setLessonDone(585, 101, true)
     expect(isModuleDone(585, moduleWith('Module', [pageItem(101)]))).toBe(true)
     expect(isModuleDone(612, moduleWith('Module', [pageItem(101)]))).toBe(false)
+  })
+})
+
+describe('marking a whole Module Done', () => {
+  beforeEach(() => {
+    localStorage.clear()
+  })
+
+  it('marks every Done-able leaf Done, so the derived Module Done flips with no stored Module flag', () => {
+    const mod = moduleWith('Module', [
+      pageItem(101),
+      pageItem(102),
+      assignmentItem(1, 77),
+    ])
+    markModuleDone(585, mod)
+
+    expect(isLessonDone(585, 101)).toBe(true)
+    expect(isLessonDone(585, 102)).toBe(true)
+    expect(isAssignmentDone(585, 77)).toBe(true)
+    expect(isModuleDone(585, mod)).toBe(true)
+  })
+
+  it('leaves non-Done-able items (SubHeaders, links) alone — there is nothing to mark', () => {
+    const mod = moduleWith('Module', [
+      { id: 400, type: 'SubHeader', title: 'Header' },
+      { id: 401, type: 'ExternalUrl', title: 'Link' },
+      pageItem(101),
+    ])
+    markModuleDone(585, mod)
+
+    expect(isLessonDone(585, 101)).toBe(true)
+    expect(readStoredDone()).toEqual({ '585': { lessons: [101], assignments: [] } })
+  })
+
+  it('never marks a Module with no Done-able leaves Done (it stays visible in normal navigation)', () => {
+    markModuleDone(585, moduleWith('Empty', []))
+    markModuleDone(585, { id: 9002, name: 'No items', position: 2 })
+    markModuleDone(585, moduleWith('Only chrome', [{ id: 400, type: 'SubHeader', title: 'Header' }]))
+
+    expect(readStoredDone()).toBeNull()
+  })
+
+  it('marking one Module Done does not touch sibling Modules', () => {
+    const modA = moduleWith('Module A', [pageItem(101)])
+    const modB = moduleWith('Module B', [pageItem(102)])
+    markModuleDone(585, modA)
+
+    expect(isModuleDone(585, modA)).toBe(true)
+    expect(isModuleDone(585, modB)).toBe(false)
   })
 })
 
