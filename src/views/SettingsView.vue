@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
 import ProgramPicker from '../components/ProgramPicker.vue'
+import { purgeDoneEntries } from '../done'
 import { loadPrograms, savePrograms, type Program } from '../programs'
 
 const router = useRouter()
 
 function onConfirm(programs: Program[]): void {
   savePrograms(programs)
+  purgeDoneEntries(programs)
   void router.push({ name: 'home' })
 }
 </script>

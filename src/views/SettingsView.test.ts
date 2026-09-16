@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import { coursesResponse, mountAppAtPath } from '../test/appHarness'
+import { DONE_STORAGE_KEY } from '../done'
 import { PROGRAMS_STORAGE_KEY, type Program } from '../programs'
 import { TOKEN_STORAGE_KEY } from '../token'
 
@@ -124,6 +125,63 @@ describe('SettingsView (Manage Programs)', () => {
     const listText = wrapper.find('ul').text()
     expect(listText).toContain('Administration Materials Bank')
     expect(listText).not.toContain('Programmeringäsning')
+  })
+
+  it('toggling a Program to Archived leaves its Done state untouched', async () => {
+    seedPrograms([
+      { courseId: 585, name: 'Programmeringäsning', archived: false },
+      { courseId: 612, name: 'Administration Materials Bank', archived: false },
+    ])
+    localStorage.setItem(
+      DONE_STORAGE_KEY,
+      JSON.stringify({
+        '585': { lessons: [101], assignments: [77] },
+        '612': { lessons: [202], assignments: [] },
+      }),
+    )
+    fetchMock.mockResolvedValue(
+      coursesResponse([
+        { id: 585, name: 'Programmeringäsning' },
+        { id: 612, name: 'Administration Materials Bank' },
+      ]),
+    )
+    const { wrapper } = await mountAppAtPath('/settings')
+
+    await archiveToggle(wrapper, 'Programmeringäsning').setValue(true)
+    await confirmSelection(wrapper)
+
+    expect(JSON.parse(localStorage.getItem(DONE_STORAGE_KEY) ?? 'null')).toEqual({
+      '585': { lessons: [101], assignments: [77] },
+      '612': { lessons: [202], assignments: [] },
+    })
+  })
+
+  it('fully deselecting a Program purges its Done state, keeping the rest', async () => {
+    seedPrograms([
+      { courseId: 585, name: 'Programmeringäsning', archived: false },
+      { courseId: 612, name: 'Administration Materials Bank', archived: false },
+    ])
+    localStorage.setItem(
+      DONE_STORAGE_KEY,
+      JSON.stringify({
+        '585': { lessons: [101], assignments: [77] },
+        '612': { lessons: [202], assignments: [] },
+      }),
+    )
+    fetchMock.mockResolvedValue(
+      coursesResponse([
+        { id: 585, name: 'Programmeringäsning' },
+        { id: 612, name: 'Administration Materials Bank' },
+      ]),
+    )
+    const { wrapper } = await mountAppAtPath('/settings')
+
+    await courseCheckbox(wrapper, 'Programmeringäsning').setValue(false)
+    await confirmSelection(wrapper)
+
+    expect(JSON.parse(localStorage.getItem(DONE_STORAGE_KEY) ?? 'null')).toEqual({
+      '612': { lessons: [202], assignments: [] },
+    })
   })
 
   it('newly-picked Courses default to Active and unpicked Courses are dropped from storage', async () => {

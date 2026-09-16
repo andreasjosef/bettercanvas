@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import { coursesResponse, mountAppAtPath } from '../test/appHarness'
+import { DONE_STORAGE_KEY } from '../done'
 import { PROGRAMS_STORAGE_KEY } from '../programs'
 import { TOKEN_STORAGE_KEY } from '../token'
 
@@ -85,6 +86,31 @@ describe('PickerView', () => {
     expect(stored).toEqual([])
     expect(router.currentRoute.value.name).toBe('home')
     expect(wrapper.find('h1').text()).toBe('Home')
+  })
+
+  it('confirming a selection purges the Done state of fully-deselected Programs, keeping picked ones', async () => {
+    localStorage.setItem(TOKEN_STORAGE_KEY, 'token123')
+    localStorage.setItem(
+      DONE_STORAGE_KEY,
+      JSON.stringify({
+        '585': { lessons: [101], assignments: [77] },
+        '612': { lessons: [202], assignments: [] },
+      }),
+    )
+    fetchMock.mockResolvedValue(
+      coursesResponse([
+        { id: 585, name: 'Programmeringäsning' },
+        { id: 612, name: 'Administration Materials Bank' },
+      ]),
+    )
+    const { wrapper } = await mountAppAtPath('/picker')
+
+    await wrapper.findAll('input[type="checkbox"]')[1]!.setValue(true)
+    await confirmSelection(wrapper)
+
+    expect(JSON.parse(localStorage.getItem(DONE_STORAGE_KEY) ?? 'null')).toEqual({
+      '612': { lessons: [202], assignments: [] },
+    })
   })
 
   it('on a failed Courses fetch: shows an inline error and persists nothing', async () => {
