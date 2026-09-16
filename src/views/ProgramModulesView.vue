@@ -1,39 +1,31 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
-import { RouterLink, useRouter } from 'vue-router'
-import {
-  fetchModules,
-  type CourseModule,
-  type ModuleItem,
-} from '../api/canvas'
-import { loadToken } from '../token'
+import { computed } from 'vue'
+import { RouterLink } from 'vue-router'
+import { useQuery } from '@tanstack/vue-query'
+import type { ModuleItem } from '../api/canvas'
+import { canvasQueryOptions } from '../api/keys'
+import { useCanvasToken } from '../api/useCanvasToken'
 import ProgramTabs from '../components/ProgramTabs.vue'
 
 const props = defineProps<{ programId: string }>()
 
-const router = useRouter()
-const loading = ref(true)
-const failed = ref(false)
-const modules = ref<CourseModule[]>([])
+const { token, tokenEnabled } = useCanvasToken()
+
+const courseId = computed(() => Number(props.programId))
+const query = useQuery(
+  computed(() => ({
+    ...canvasQueryOptions.modules(courseId.value, token ?? ''),
+    enabled: tokenEnabled.value,
+  })),
+)
+
+const loading = computed(() => query.isPending.value)
+const failed = computed(() => query.isError.value)
+const modules = computed(() => query.data.value ?? [])
 
 function canvasItemHref(item: ModuleItem): string {
   return item.html_url ?? item.external_url ?? ''
 }
-
-onMounted(async () => {
-  const token = loadToken()
-  if (!token) {
-    await router.replace({ name: 'connect' })
-    return
-  }
-  try {
-    modules.value = await fetchModules(token, Number(props.programId))
-  } catch {
-    failed.value = true
-  } finally {
-    loading.value = false
-  }
-})
 </script>
 
 <template>
