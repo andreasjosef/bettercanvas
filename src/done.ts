@@ -1,0 +1,112 @@
+import type { CourseModule, ModuleItem } from './api/canvas.ts'
+import type { Program } from './programs.ts'
+
+export const DONE_STORAGE_KEY = 'canvas.done'
+
+export interface DoneEntry {
+  /** Module-item ids of Done Lessons (Page-type items). */
+  lessons: number[]
+  /** Canvas Assignment ids (content_id) of Done Assignments. */
+  assignments: number[]
+}
+
+/** Done flags keyed by courseId. Modules are never stored — always derived. */
+export type DoneState = Record<number, DoneEntry>
+
+function isNumberArray(value: unknown): value is number[] {
+  return Array.isArray(value) && value.every((item) => typeof item === 'number')
+}
+
+function loadDoneState(): DoneState {
+  const raw = localStorage.getItem(DONE_STORAGE_KEY)
+  if (!raw) return {}
+  try {
+    const parsed = JSON.parse(raw) as unknown
+    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+      return {}
+    }
+    const state: DoneState = {}
+    for (const [key, value] of Object.entries(parsed)) {
+      if (!/^\d+$/.test(key)) continue
+      if (typeof value !== 'object' || value === null) continue
+      const entry = value as Partial<DoneEntry>
+      if (!isNumberArray(entry.lessons) && !isNumberArray(entry.assignments)) continue
+      state[Number(key)] = {
+        lessons: isNumberArray(entry.lessons) ? entry.lessons : [],
+        assignments: isNumberArray(entry.assignments) ? entry.assignments : [],
+      }
+    }
+    return state
+  } catch {
+    return {}
+  }
+}
+
+function saveDoneState(state: DoneState): void {
+  if (Object.keys(state).length === 0) {
+    localStorage.removeItem(DONE_STORAGE_KEY)
+    return
+  }
+  localStorage.setItem(DONE_STORAGE_KEY, JSON.stringify(state))
+}
+
+function entryFor(state: DoneState, courseId: number): DoneEntry {
+  return state[courseId] ?? { lessons: [], assignments: [] }
+}
+
+function updateEntry(courseId: number, update: (entry: DoneEntry) => void): void {
+  const state = loadDoneState()
+  const entry = entryFor(state, courseId)
+  update(entry)
+  state[courseId] = entry
+  saveDoneState(state)
+}
+
+export function isLessonDone(courseId: number, moduleItemId: number): boolean {
+  return loadDoneState()[courseId]?.lessons.includes(moduleItemId) ?? false
+}
+
+export function setLessonDone(courseId: number, moduleItemId: number, done: boolean): void {
+  updateEntry(courseId, (entry) => {
+    entry.lessons = entry.lessons.filter((id) => id !== moduleItemId)
+    if (done) entry.lessons.push(moduleItemId)
+  })
+}
+
+export function isAssignmentDone(courseId: number, assignmentId: number): boolean {
+  return loadDoneState()[courseId]?.assignments.includes(assignmentId) ?? false
+}
+
+export function setAssignmentDone(courseId: number, assignmentId: number, done: boolean): void {
+  updateEntry(courseId, (entry) => {
+    entry.assignments = entry.assignments.filter((id) => id !== assignmentId)
+    if (done) entry.assignments.push(assignmentId)
+  })
+}
+
+/** A leaf item can carry a Done flag: Lessons (Page items) and Assignments (by content_id). */
+export function isDoneAbleItem(item: ModuleItem): boolean {
+  if (item.type === 'Page') return true
+  return item.type === 'Assignment' && typeof item.content_id === 'number'
+}
+
+function isLeafDone(courseId: number, item: ModuleItem): boolean {
+  if (item.type === 'Page') return isLessonDone(courseId, item.id)
+  return isAssignmentDone(courseId, item.content_id as number)
+}
+
+/** Derived, never stored: Done iff at least one Done-able leaf and all of them are Done. */
+export function isModuleDone(courseId: number, module: CourseModule): boolean {
+  const doneAble = (module.items ?? []).filter(isDoneAbleItem)
+  return doneAble.length > 0 && doneAble.every((item) => isLeafDone(courseId, item))
+}
+
+/** Purges canvas.done entries for Programs not in the given selection. */
+export function purgeDoneEntries(programs: Program[]): void {
+  const state = loadDoneState()
+  const kept = programs.map((program) => program.courseId)
+  const pruned = Object.fromEntries(
+    Object.entries(state).filter(([key]) => kept.includes(Number(key))),
+  ) as DoneState
+  saveDoneState(pruned)
+}
