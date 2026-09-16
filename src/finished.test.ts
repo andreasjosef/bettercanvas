@@ -222,6 +222,9 @@ describe('Finished view', () => {
     expect(sectionLabels(wrapper, 'finished-modules')).toEqual(['Week 1'])
 
     async function toggleArchive(checked: boolean): Promise<void> {
+      // Inside a Program the sidebar shows Program nav; Settings is only
+      // reachable after leaving via the wordmark back to Home.
+      await clickLink(wrapper, 'Better Canvas')
       await clickLink(wrapper, 'Settings')
       const toggle = wrapper.find('input[aria-label="Archive Vue & the Modern Web"]')
       expect(toggle.exists()).toBe(true)
