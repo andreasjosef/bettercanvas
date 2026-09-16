@@ -28,7 +28,7 @@ describe('Query-backed session cache', () => {
     vi.unstubAllGlobals()
   })
 
-  it('navigating Modules → Assignments → Modules fetches the modules list once', async () => {
+  it('navigating landing → Module → landing fetches the modules list once', async () => {
     fetchMock.mockImplementation((url: string) => {
       if (url.includes('/modules')) {
         return Promise.resolve(
@@ -56,14 +56,17 @@ describe('Query-backed session cache', () => {
       )
     })
 
-    const { wrapper, router } = await mountAppAtPath('/programs/585/modules')
+    const { wrapper, router } = await mountAppAtPath('/programs/585')
     expect(wrapper.text()).toContain('Module 01')
 
-    await router.push({ name: 'program-assignments', params: { programId: '585' } })
+    await router.push({
+      name: 'program-module',
+      params: { programId: '585', moduleId: '101' },
+    })
     await flushPromises()
-    expect(wrapper.text()).toContain('Lab 2')
+    expect(wrapper.text()).toContain('Intro to Vue')
 
-    await router.push({ name: 'program-modules', params: { programId: '585' } })
+    await router.push({ name: 'program', params: { programId: '585' } })
     await flushPromises()
     expect(wrapper.text()).toContain('Module 01')
 
@@ -86,7 +89,7 @@ describe('Query-backed session cache', () => {
     const { wrapper, router } = await mountAppAtPath('/')
     expect(wrapper.text()).toContain('Next due: Lab 2')
 
-    await router.push({ name: 'program-modules', params: { programId: '585' } })
+    await router.push({ name: 'program', params: { programId: '585' } })
     await flushPromises()
     expect(wrapper.text()).toContain('Vue & the Modern Web')
 

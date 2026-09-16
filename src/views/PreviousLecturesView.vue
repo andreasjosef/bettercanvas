@@ -32,7 +32,7 @@ onMounted(async () => {
     <ul v-else class="m-0 w-full max-w-2xl list-none p-0 flex flex-col">
       <li v-for="program in archivedPrograms" :key="program.courseId">
         <RouterLink
-          :to="{ name: 'program-modules', params: { programId: String(program.courseId) } }"
+          :to="{ name: 'program', params: { programId: String(program.courseId) } }"
           class="block py-2 border-b border-border no-underline text-inherit text-left font-heading text-heading text-lg"
         >
           {{ program.name }}

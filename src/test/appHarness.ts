@@ -46,6 +46,8 @@ export interface FakeModuleItem {
   page_url?: string
   html_url?: string
   external_url?: string
+  /** Canvas Assignment id for Assignment-type items. */
+  content_id?: number
 }
 
 export interface FakeModule {

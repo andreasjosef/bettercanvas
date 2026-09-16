@@ -1,10 +1,12 @@
-import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHistory, type RouteLocation } from 'vue-router'
 import { setAuthFailureHandler } from '../api/canvas'
 import ConnectView from '../views/ConnectView.vue'
 import PickerView from '../views/PickerView.vue'
 import HomeView from '../views/HomeView.vue'
-import ProgramModulesView from '../views/ProgramModulesView.vue'
-import ProgramAssignmentsView from '../views/ProgramAssignmentsView.vue'
+import ProgramShell from '../components/ProgramShell.vue'
+import ProgramLandingView from '../views/ProgramLandingView.vue'
+import ProgramModuleView from '../views/ProgramModuleView.vue'
+import ProgramFinishedView from '../views/ProgramFinishedView.vue'
 import ReadingView from '../views/ReadingView.vue'
 import SettingsView from '../views/SettingsView.vue'
 import PreviousLecturesView from '../views/PreviousLecturesView.vue'
@@ -30,16 +32,44 @@ export const routes = [
     component: PreviousLecturesView,
   },
   {
-    path: '/programs/:programId/modules',
-    name: 'program-modules',
-    component: ProgramModulesView,
+    path: '/programs/:programId',
+    component: ProgramShell,
     props: true,
-  },
-  {
-    path: '/programs/:programId/assignments',
-    name: 'program-assignments',
-    component: ProgramAssignmentsView,
-    props: true,
+    children: [
+      {
+        path: '',
+        name: 'program',
+        component: ProgramLandingView,
+        props: true,
+      },
+      {
+        path: 'modules/:moduleId',
+        name: 'program-module',
+        component: ProgramModuleView,
+        props: true,
+      },
+      {
+        path: 'finished',
+        name: 'program-finished',
+        component: ProgramFinishedView,
+        props: true,
+      },
+      // Legacy flat tab-bar routes: land on the Program aggregate.
+      {
+        path: 'modules',
+        redirect: (to: RouteLocation) => ({
+          name: 'program',
+          params: { programId: to.params.programId },
+        }),
+      },
+      {
+        path: 'assignments',
+        redirect: (to: RouteLocation) => ({
+          name: 'program',
+          params: { programId: to.params.programId },
+        }),
+      },
+    ],
   },
   {
     path: '/programs/:programId/read/:itemId',

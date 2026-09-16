@@ -103,17 +103,17 @@ describe('HomeView', () => {
     expectPlainListRows(wrapper, 'ul > li', 2)
   })
 
-  it('each Active Program opens its Modules view', async () => {
+  it('each Active Program opens its Program landing view', async () => {
     savePrograms([{ courseId: 585, name: 'Programmeringäsning', archived: false }])
     fetchMock.mockResolvedValue(assignmentsResponse([]))
     const { wrapper } = await mountAppAtPath('/')
 
-    const rowLink = wrapper.find('ul a[href="/programs/585/modules"]')
+    const rowLink = wrapper.find('ul a[href="/programs/585"]')
     expect(rowLink.exists()).toBe(true)
     expect(rowLink.text()).toContain('Programmeringäsning')
 
     await rowLink.trigger('click')
     await flushPromises()
-    expect(wrapper.text()).toContain('Modules')
+    expect(wrapper.find('h1').text()).toBe('Programmeringäsning')
   })
 })

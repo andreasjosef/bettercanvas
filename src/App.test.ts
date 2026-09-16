@@ -26,8 +26,8 @@ describe('App routing', () => {
     ['/', 'Home'],
     ['/connect', 'Connect'],
     ['/picker', 'Pick your Programs'],
-    ['/programs/p1/modules', 'Modules'],
-    ['/programs/p1/assignments', 'Assignments'],
+    ['/programs/p1', 'Program'],
+    ['/programs/p1/finished', 'Finished'],
   ])('renders the %s screen for %s', async (path, expectedHeading) => {
     const wrapper = await mountAt(path)
     expect(wrapper.find('h1').text()).toBe(expectedHeading)
@@ -78,8 +78,8 @@ describe('App shell (persistent sidebar)', () => {
 
   const postConnectPaths = [
     '/',
-    '/programs/p1/modules',
-    '/programs/p1/assignments',
+    '/programs/p1',
+    '/programs/p1/finished',
     '/programs/p1/read/item1',
     '/settings',
     '/previous-lectures',
@@ -120,7 +120,7 @@ describe('App shell (persistent sidebar)', () => {
   )
 
   it.each([
-    '/programs/p1/modules',
+    '/programs/p1',
     '/programs/p1/read/item1',
     '/previous-lectures',
   ])(
