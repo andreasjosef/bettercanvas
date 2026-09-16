@@ -169,8 +169,10 @@ describe('Finished view', () => {
     expect(sidebarModuleLabels(wrapper)).toEqual(['Week 1', 'Week 2'])
     const stored = JSON.parse(
       localStorage.getItem('canvas.done') ?? 'null',
-    ) as { '585': { lessons: number[]; assignments: number[] } } | null
-    expect(stored?.['585']).toEqual({ lessons: [], assignments: [] })
+    ) as {
+      '585': { lessons: number[]; assignments: number[]; modules: number[] }
+    } | null
+    expect(stored?.['585']).toEqual({ lessons: [], assignments: [], modules: [] })
   })
 
   it('an Assignment shared across Modules lists as one Done Assignment, and un-marking it clears it everywhere', async () => {

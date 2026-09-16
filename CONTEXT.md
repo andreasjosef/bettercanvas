@@ -53,11 +53,16 @@ A per-item completion state on Modules, Lessons, and Assignments, set by
 the user in Better Canvas — never read from or written to Canvas itself.
 Marking a Module Done marks every one of its Lessons and Assignments Done;
 a Module also becomes Done automatically once all of its own Lessons and
-Assignments are individually Done. A Done item disappears from its normal
-place in Program navigation and surfaces instead in Finished, where it can
-be un-marked. Fully independent of Active/Archived Program state — marking
-everything in a Program Done does not archive the Program, and archiving a
-Program does not mark its content Done.
+Assignments are individually Done. A Module with no Lesson or Assignment
+at all (e.g. one holding only external links, Quizzes, Files, or
+Discussions — content types Better Canvas does not track Done state for
+individually) instead takes an explicit Done flag of its own, set directly
+by marking the Module; this is the only case where a Module's Done state
+is stored rather than derived from its content. A Done item disappears
+from its normal place in Program navigation and surfaces instead in
+Finished, where it can be un-marked. Fully independent of Active/Archived
+Program state — marking everything in a Program Done does not archive the
+Program, and archiving a Program does not mark its content Done.
 _Avoid_: Archived (reserved for Archived Program, below), Complete,
 Finished (that names the view, not the state)
 

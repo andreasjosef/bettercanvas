@@ -44,8 +44,8 @@ describe('Done storage', () => {
 
     const stored = readStoredDone()
     expect(stored).toEqual({
-      '585': { lessons: [101], assignments: [77] },
-      '612': { lessons: [202], assignments: [] },
+      '585': { lessons: [101], assignments: [77], modules: [] },
+      '612': { lessons: [202], assignments: [], modules: [] },
     })
     expect(isLessonDone(585, 101)).toBe(true)
     expect(isAssignmentDone(585, 77)).toBe(true)
@@ -78,7 +78,7 @@ describe('Done storage', () => {
     setAssignmentDone(585, 77, false)
 
     const stored = readStoredDone()
-    expect(stored).toEqual({ '585': { lessons: [], assignments: [] } })
+    expect(stored).toEqual({ '585': { lessons: [], assignments: [], modules: [] } })
     expect(isLessonDone(585, 101)).toBe(false)
     expect(isAssignmentDone(585, 77)).toBe(false)
   })
@@ -201,15 +201,68 @@ describe('marking a whole Module Done', () => {
     markModuleDone(585, mod)
 
     expect(isLessonDone(585, 101)).toBe(true)
-    expect(readStoredDone()).toEqual({ '585': { lessons: [101], assignments: [] } })
+    expect(readStoredDone()).toEqual({
+      '585': { lessons: [101], assignments: [], modules: [] },
+    })
   })
 
-  it('never marks a Module with no Done-able leaves Done (it stays visible in normal navigation)', () => {
-    markModuleDone(585, moduleWith('Empty', []))
-    markModuleDone(585, { id: 9002, name: 'No items', position: 2 })
-    markModuleDone(585, moduleWith('Only chrome', [{ id: 400, type: 'SubHeader', title: 'Header' }]))
+  it('marks a Module with no Done-able leaf Done via the stored override', () => {
+    const empty: CourseModule = { id: 9001, name: 'Empty', position: 1, items: [] }
+    const noItems: CourseModule = { id: 9002, name: 'No items', position: 2 }
+    const onlyChrome: CourseModule = {
+      id: 9003,
+      name: 'Only chrome',
+      position: 3,
+      items: [{ id: 400, type: 'SubHeader', title: 'Header' }],
+    }
+    const onlyLink: CourseModule = {
+      id: 9004,
+      name: 'Only a link',
+      position: 4,
+      items: [{ id: 401, type: 'ExternalUrl', title: 'Link' }],
+    }
 
-    expect(readStoredDone()).toBeNull()
+    markModuleDone(585, empty)
+    markModuleDone(585, noItems)
+    markModuleDone(585, onlyChrome)
+    markModuleDone(585, onlyLink)
+
+    expect(isModuleDone(585, empty)).toBe(true)
+    expect(isModuleDone(585, noItems)).toBe(true)
+    expect(isModuleDone(585, onlyChrome)).toBe(true)
+    expect(isModuleDone(585, onlyLink)).toBe(true)
+    expect(readStoredDone()).toEqual({
+      '585': {
+        lessons: [],
+        assignments: [],
+        modules: [empty.id, noItems.id, onlyChrome.id, onlyLink.id],
+      },
+    })
+  })
+
+  it('unmarkModuleDone clears the stored override for a Module with no Done-able leaf', () => {
+    const onlyLink = moduleWith('Only a link', [
+      { id: 401, type: 'ExternalUrl', title: 'Link' },
+    ])
+    markModuleDone(585, onlyLink)
+    expect(isModuleDone(585, onlyLink)).toBe(true)
+
+    unmarkModuleDone(585, onlyLink)
+
+    expect(isModuleDone(585, onlyLink)).toBe(false)
+    expect(readStoredDone()).toEqual({
+      '585': { lessons: [], assignments: [], modules: [] },
+    })
+  })
+
+  it('the stored override is scoped per Program, like every other Done flag', () => {
+    const onlyLink = moduleWith('Only a link', [
+      { id: 401, type: 'ExternalUrl', title: 'Link' },
+    ])
+    markModuleDone(585, onlyLink)
+
+    expect(isModuleDone(585, onlyLink)).toBe(true)
+    expect(isModuleDone(612, onlyLink)).toBe(false)
   })
 
   it('marking one Module Done does not touch sibling Modules', () => {
@@ -236,7 +289,9 @@ describe('un-marking Done items', () => {
 
     expect(isLessonDone(585, 101)).toBe(false)
     expect(isAssignmentDone(585, 77)).toBe(false)
-    expect(readStoredDone()).toEqual({ '585': { lessons: [], assignments: [] } })
+    expect(readStoredDone()).toEqual({
+      '585': { lessons: [], assignments: [], modules: [] },
+    })
   })
 
   it('unmarkItemDone ignores items that cannot carry a Done flag', () => {
@@ -264,7 +319,9 @@ describe('un-marking Done items', () => {
     expect(isLessonDone(585, 102)).toBe(false)
     expect(isAssignmentDone(585, 77)).toBe(false)
     expect(isModuleDone(585, mod)).toBe(false)
-    expect(readStoredDone()).toEqual({ '585': { lessons: [], assignments: [] } })
+    expect(readStoredDone()).toEqual({
+      '585': { lessons: [], assignments: [], modules: [] },
+    })
   })
 
   it('unmarkModuleDone leaves other Modules and their leaves untouched', () => {
@@ -310,7 +367,7 @@ describe('purging Done state on Program removal', () => {
       { courseId: 612, name: 'Administration Materials Bank', archived: false },
     ])
     const stored = readStoredDone()
-    expect(stored).toEqual({ '612': { lessons: [202], assignments: [] } })
+    expect(stored).toEqual({ '612': { lessons: [202], assignments: [], modules: [] } })
   })
 
   it('archiving or unarchiving a Program leaves its canvas.done entry untouched', () => {

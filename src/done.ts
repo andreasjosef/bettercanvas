@@ -15,9 +15,18 @@ export interface DoneEntry {
   lessons: number[]
   /** Canvas Assignment ids (content_id) of Done Assignments. */
   assignments: number[]
+  /**
+   * Module ids explicitly marked Done by the user. Only consulted as a
+   * fallback for Modules with no Done-able Lesson/Assignment leaf to derive
+   * from — a Module that has any such leaf is always derived, never stored.
+   */
+  modules: number[]
 }
 
-/** Done flags keyed by courseId. Modules are never stored — always derived. */
+/**
+ * Done flags keyed by courseId. Modules are stored only as a fallback for
+ * ones with no Done-able leaf — every other Module stays purely derived.
+ */
 export type DoneState = Record<number, DoneEntry>
 
 function isNumberArray(value: unknown): value is number[] {
@@ -37,10 +46,17 @@ function loadDoneState(): DoneState {
       if (!/^\d+$/.test(key)) continue
       if (typeof value !== 'object' || value === null) continue
       const entry = value as Partial<DoneEntry>
-      if (!isNumberArray(entry.lessons) && !isNumberArray(entry.assignments)) continue
+      if (
+        !isNumberArray(entry.lessons) &&
+        !isNumberArray(entry.assignments) &&
+        !isNumberArray(entry.modules)
+      ) {
+        continue
+      }
       state[Number(key)] = {
         lessons: isNumberArray(entry.lessons) ? entry.lessons : [],
         assignments: isNumberArray(entry.assignments) ? entry.assignments : [],
+        modules: isNumberArray(entry.modules) ? entry.modules : [],
       }
     }
     return state
@@ -58,7 +74,7 @@ function saveDoneState(state: DoneState): void {
 }
 
 function entryFor(state: DoneState, courseId: number): DoneEntry {
-  return state[courseId] ?? { lessons: [], assignments: [] }
+  return state[courseId] ?? { lessons: [], assignments: [], modules: [] }
 }
 
 function updateEntry(courseId: number, update: (entry: DoneEntry) => void): void {
@@ -92,6 +108,21 @@ export function setAssignmentDone(courseId: number, assignmentId: number, done: 
   })
 }
 
+/**
+ * Explicit per-Module Done override, consulted only when the Module has no
+ * Done-able Lesson/Assignment leaf to derive its Done state from.
+ */
+function isModuleDoneOverride(courseId: number, moduleId: number): boolean {
+  return loadDoneState()[courseId]?.modules.includes(moduleId) ?? false
+}
+
+function setModuleDoneOverride(courseId: number, moduleId: number, done: boolean): void {
+  updateEntry(courseId, (entry) => {
+    entry.modules = entry.modules.filter((id) => id !== moduleId)
+    if (done) entry.modules.push(moduleId)
+  })
+}
+
 /** A leaf item can carry a Done flag: Lessons (Page items) and Assignments (by content_id). */
 export function isDoneAbleItem(item: ModuleItem): boolean {
   if (item.type === 'Page') return true
@@ -103,10 +134,17 @@ function isLeafDone(courseId: number, item: ModuleItem): boolean {
   return isAssignmentDone(courseId, item.content_id as number)
 }
 
-/** Derived, never stored: Done iff at least one Done-able leaf and all of them are Done. */
+/**
+ * Derived from its Done-able leaves when it has any: Done iff all of them
+ * are Done. A Module with no Done-able leaf (only chrome, links, or other
+ * untracked item types) instead falls back to its explicit stored override.
+ */
 export function isModuleDone(courseId: number, module: CourseModule): boolean {
   const doneAble = (module.items ?? []).filter(isDoneAbleItem)
-  return doneAble.length > 0 && doneAble.every((item) => isLeafDone(courseId, item))
+  if (doneAble.length > 0) {
+    return doneAble.every((item) => isLeafDone(courseId, item))
+  }
+  return isModuleDoneOverride(courseId, module.id)
 }
 
 function setItemDone(courseId: number, item: ModuleItem, done: boolean): void {
@@ -123,14 +161,18 @@ export function markItemDone(courseId: number, item: ModuleItem): void {
 }
 
 /**
- * Sugar for marking every one of the Module's Done-able leaves Done at once;
- * the Module's own Done state stays derived and is never stored. A Module with
- * no Done-able leaves is left untouched (it can never be Done).
+ * Marks every one of the Module's Done-able leaves Done at once; the
+ * Module's own Done state stays derived from them and is never stored. A
+ * Module with no Done-able leaf instead sets the explicit stored override,
+ * since there is nothing for it to derive from.
  */
 export function markModuleDone(courseId: number, module: CourseModule): void {
-  for (const item of module.items ?? []) {
-    if (isDoneAbleItem(item)) markItemDone(courseId, item)
+  const doneAble = (module.items ?? []).filter(isDoneAbleItem)
+  if (doneAble.length > 0) {
+    for (const item of doneAble) markItemDone(courseId, item)
+    return
   }
+  setModuleDoneOverride(courseId, module.id, true)
 }
 
 /** Un-marks one Done-able leaf (a Lesson or an Assignment) back to not-Done. */
@@ -139,15 +181,19 @@ export function unmarkItemDone(courseId: number, item: ModuleItem): void {
 }
 
 /**
- * Sugar for un-marking every one of the Module's Done-able leaves at once,
- * pulling the derived Module back out of Done. Because Module Done is always
- * derived, un-marking a single child is already sufficient to pull the Module
- * out on its own — while leaving every other already-Done child untouched.
+ * Un-marks every one of the Module's Done-able leaves at once, pulling the
+ * derived Module back out of Done (un-marking a single child is already
+ * sufficient for that, on its own — this leaves every other already-Done
+ * child untouched). A Module with no Done-able leaf instead clears its
+ * explicit stored override.
  */
 export function unmarkModuleDone(courseId: number, module: CourseModule): void {
-  for (const item of module.items ?? []) {
-    if (isDoneAbleItem(item)) unmarkItemDone(courseId, item)
+  const doneAble = (module.items ?? []).filter(isDoneAbleItem)
+  if (doneAble.length > 0) {
+    for (const item of doneAble) unmarkItemDone(courseId, item)
+    return
   }
+  setModuleDoneOverride(courseId, module.id, false)
 }
 
 /** Purges canvas.done entries for Programs not in the given selection. */

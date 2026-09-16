@@ -135,8 +135,8 @@ describe('SettingsView (Manage Programs)', () => {
     localStorage.setItem(
       DONE_STORAGE_KEY,
       JSON.stringify({
-        '585': { lessons: [101], assignments: [77] },
-        '612': { lessons: [202], assignments: [] },
+        '585': { lessons: [101], assignments: [77], modules: [] },
+        '612': { lessons: [202], assignments: [], modules: [] },
       }),
     )
     fetchMock.mockResolvedValue(
@@ -151,8 +151,8 @@ describe('SettingsView (Manage Programs)', () => {
     await confirmSelection(wrapper)
 
     expect(JSON.parse(localStorage.getItem(DONE_STORAGE_KEY) ?? 'null')).toEqual({
-      '585': { lessons: [101], assignments: [77] },
-      '612': { lessons: [202], assignments: [] },
+      '585': { lessons: [101], assignments: [77], modules: [] },
+      '612': { lessons: [202], assignments: [], modules: [] },
     })
   })
 
@@ -164,8 +164,8 @@ describe('SettingsView (Manage Programs)', () => {
     localStorage.setItem(
       DONE_STORAGE_KEY,
       JSON.stringify({
-        '585': { lessons: [101], assignments: [77] },
-        '612': { lessons: [202], assignments: [] },
+        '585': { lessons: [101], assignments: [77], modules: [] },
+        '612': { lessons: [202], assignments: [], modules: [] },
       }),
     )
     fetchMock.mockResolvedValue(
@@ -180,7 +180,7 @@ describe('SettingsView (Manage Programs)', () => {
     await confirmSelection(wrapper)
 
     expect(JSON.parse(localStorage.getItem(DONE_STORAGE_KEY) ?? 'null')).toEqual({
-      '612': { lessons: [202], assignments: [] },
+      '612': { lessons: [202], assignments: [], modules: [] },
     })
   })
 

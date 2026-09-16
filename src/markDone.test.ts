@@ -142,9 +142,9 @@ describe('Mark Done: Lessons, Assignments, and Modules', () => {
 
     const stored = JSON.parse(localStorage.getItem(DONE_STORAGE_KEY) ?? '{}') as Record<
       string,
-      { lessons: number[]; assignments: number[] }
+      { lessons: number[]; assignments: number[]; modules: number[] }
     >
-    expect(stored['585']).toEqual({ lessons: [1], assignments: [900] })
+    expect(stored['585']).toEqual({ lessons: [1], assignments: [900], modules: [] })
   })
 
   it('a Module becomes Done automatically once all of its leaves are individually Done', async () => {
