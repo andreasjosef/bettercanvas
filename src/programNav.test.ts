@@ -96,6 +96,8 @@ function seedDoneState(
 }
 
 function programSidebar(wrapper: VueWrapper) {
+  // The Program nav must live in AppShell's single aside — no second sidebar.
+  expect(wrapper.findAll('aside')).toHaveLength(1)
   const sidebar = wrapper.find('[data-testid="program-sidebar"]')
   expect(sidebar.exists()).toBe(true)
   return sidebar

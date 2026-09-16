@@ -76,26 +76,22 @@ describe('App shell (persistent sidebar)', () => {
     return { wrapper, router }
   }
 
-  const postConnectPaths = [
-    '/',
-    '/programs/p1',
-    '/programs/p1/finished',
-    '/programs/p1/read/item1',
-    '/settings',
-    '/previous-lectures',
-  ]
+  const globalNavPaths = ['/', '/settings', '/previous-lectures']
 
-  it.each(postConnectPaths)('wraps %s in the sidebar shell', async (path) => {
-    const { wrapper } = await mountAt(path)
-    const sidebar = wrapper.find('aside')
-    expect(sidebar.exists()).toBe(true)
-    const links = sidebar.findAll('a')
-    expect(links.map((link) => link.text())).toEqual([
-      'Better Canvas',
-      'Previous Lectures',
-      'Settings',
-    ])
-  })
+  it.each(globalNavPaths)(
+    'wraps %s in the sidebar shell with the global nav',
+    async (path) => {
+      const { wrapper } = await mountAt(path)
+      const sidebar = wrapper.find('aside')
+      expect(sidebar.exists()).toBe(true)
+      const links = sidebar.findAll('a')
+      expect(links.map((link) => link.text())).toEqual([
+        'Better Canvas',
+        'Previous Lectures',
+        'Settings',
+      ])
+    },
+  )
 
   it.each([
     ['/connect', 'Connect'],
@@ -105,7 +101,7 @@ describe('App shell (persistent sidebar)', () => {
     expect(wrapper.find('aside').exists()).toBe(false)
   })
 
-  it.each(postConnectPaths)(
+  it.each(globalNavPaths)(
     'navigates to Home from the sidebar wordmark on %s',
     async (path) => {
       const { wrapper, router } = await mountAt(path)
@@ -119,28 +115,69 @@ describe('App shell (persistent sidebar)', () => {
     },
   )
 
-  it.each([
-    '/programs/p1',
-    '/programs/p1/read/item1',
-    '/previous-lectures',
-  ])(
-    'navigates to Settings and Previous Lectures from the sidebar on %s',
-    async (path) => {
-      const { wrapper, router } = await mountAt(path)
-      const sidebar = wrapper.find('aside')
-      const settings = sidebar
-        .findAll('a')
-        .find((link) => link.text() === 'Settings')
-      await settings?.trigger('click')
-      await flushPromises()
-      expect(router.currentRoute.value.name).toBe('settings')
+  it('the Program route reuses AppShell\'s single aside with Program nav instead of the global nav', async () => {
+    const { wrapper } = await mountAt('/programs/p1')
 
-      const previousLectures = sidebar
-        .findAll('a')
-        .find((link) => link.text() === 'Previous Lectures')
-      await previousLectures?.trigger('click')
-      await flushPromises()
-      expect(router.currentRoute.value.name).toBe('previous-lectures')
-    },
-  )
+    // Exactly one sidebar element on the page, not two side by side.
+    const asides = wrapper.findAll('aside')
+    expect(asides).toHaveLength(1)
+
+    const links = asides[0]!.findAll('a')
+    // Wordmark stays; global nav is swapped out for Program nav (Finished,
+    // then the Module list — Modules fetch fails here, so none render).
+    expect(links.map((link) => link.text())).toEqual([
+      'Better Canvas',
+      'Due soon',
+      'Finished',
+    ])
+  })
+
+  it('leaving the Program reverts the aside to the global nav', async () => {
+    const { wrapper, router } = await mountAt('/programs/p1')
+    expect(wrapper.findAll('aside')).toHaveLength(1)
+    expect(wrapper.find('aside').findAll('a').map((link) => link.text()))
+      .toEqual(['Better Canvas', 'Due soon', 'Finished'])
+
+    await router.push('/previous-lectures')
+    await flushPromises()
+
+    const links = wrapper.find('aside').findAll('a')
+    expect(links.map((link) => link.text())).toEqual([
+      'Better Canvas',
+      'Previous Lectures',
+      'Settings',
+    ])
+  })
+
+  it('the wordmark persists across the Program-nav swap and links back to Home', async () => {
+    const { wrapper, router } = await mountAt('/programs/p1/finished')
+
+    const wordmark = wrapper
+      .find('aside')
+      .findAll('a')
+      .find((link) => link.text() === 'Better Canvas')
+    expect(wordmark).toBeDefined()
+
+    await wordmark!.trigger('click')
+    await flushPromises()
+    expect(router.currentRoute.value.name).toBe('home')
+    expect(wrapper.find('aside').findAll('a').map((link) => link.text()))
+      .toEqual(['Better Canvas', 'Previous Lectures', 'Settings'])
+  })
+
+  it('navigates to Settings and Previous Lectures from the sidebar on a non-Program route', async () => {
+    const { wrapper, router } = await mountAt('/previous-lectures')
+    const sidebar = wrapper.find('aside')
+    const settings = sidebar.findAll('a').find((link) => link.text() === 'Settings')
+    await settings?.trigger('click')
+    await flushPromises()
+    expect(router.currentRoute.value.name).toBe('settings')
+
+    const previousLectures = sidebar
+      .findAll('a')
+      .find((link) => link.text() === 'Previous Lectures')
+    await previousLectures?.trigger('click')
+    await flushPromises()
+    expect(router.currentRoute.value.name).toBe('previous-lectures')
+  })
 })
