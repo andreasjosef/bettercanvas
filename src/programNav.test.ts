@@ -450,7 +450,7 @@ describe('Program nav: Finished', () => {
     const { wrapper } = await mountAppAtPath('/programs/585/finished')
 
     expect(wrapper.find('h1').text()).toBe('Finished')
-    expect(wrapper.text()).toContain('Nothing finished yet.')
+    expect(wrapper.text()).toContain('Nothing Done yet.')
     expect(wrapper.findAll('li')).toHaveLength(0)
   })
 })
