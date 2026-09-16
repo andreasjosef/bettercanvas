@@ -10,6 +10,8 @@ import {
   purgeDoneEntries,
   setAssignmentDone,
   setLessonDone,
+  unmarkItemDone,
+  unmarkModuleDone,
 } from './done.ts'
 import type { Program } from './programs.ts'
 
@@ -217,6 +219,76 @@ describe('marking a whole Module Done', () => {
 
     expect(isModuleDone(585, modA)).toBe(true)
     expect(isModuleDone(585, modB)).toBe(false)
+  })
+})
+
+describe('un-marking Done items', () => {
+  beforeEach(() => {
+    localStorage.clear()
+  })
+
+  it('unmarkItemDone clears a Lesson by module-item id and an Assignment by Canvas content_id', () => {
+    markItemDone(585, pageItem(101))
+    markItemDone(585, assignmentItem(1, 77))
+
+    unmarkItemDone(585, pageItem(101))
+    unmarkItemDone(585, assignmentItem(1, 77))
+
+    expect(isLessonDone(585, 101)).toBe(false)
+    expect(isAssignmentDone(585, 77)).toBe(false)
+    expect(readStoredDone()).toEqual({ '585': { lessons: [], assignments: [] } })
+  })
+
+  it('unmarkItemDone ignores items that cannot carry a Done flag', () => {
+    markItemDone(585, pageItem(101))
+
+    unmarkItemDone(585, { id: 400, type: 'SubHeader', title: 'Header' })
+    unmarkItemDone(585, { id: 401, type: 'Assignment', title: 'No content id' })
+
+    expect(isLessonDone(585, 101)).toBe(true)
+  })
+
+  it('unmarkModuleDone clears every Done-able leaf, pulling the derived Module out of Done', () => {
+    const mod = moduleWith('Module', [
+      pageItem(101),
+      pageItem(102),
+      assignmentItem(1, 77),
+      { id: 400, type: 'SubHeader', title: 'Header' },
+    ])
+    markModuleDone(585, mod)
+    expect(isModuleDone(585, mod)).toBe(true)
+
+    unmarkModuleDone(585, mod)
+
+    expect(isLessonDone(585, 101)).toBe(false)
+    expect(isLessonDone(585, 102)).toBe(false)
+    expect(isAssignmentDone(585, 77)).toBe(false)
+    expect(isModuleDone(585, mod)).toBe(false)
+    expect(readStoredDone()).toEqual({ '585': { lessons: [], assignments: [] } })
+  })
+
+  it('unmarkModuleDone leaves other Modules and their leaves untouched', () => {
+    const modA = moduleWith('Module A', [pageItem(101)])
+    const modB = moduleWith('Module B', [pageItem(102), pageItem(103)])
+    markModuleDone(585, modA)
+    markModuleDone(585, modB)
+
+    unmarkModuleDone(585, modA)
+
+    expect(isModuleDone(585, modA)).toBe(false)
+    expect(isModuleDone(585, modB)).toBe(true)
+    expect(isLessonDone(585, 102)).toBe(true)
+    expect(isLessonDone(585, 103)).toBe(true)
+  })
+
+  it('un-marking one leaf of a Done Module leaves the other Done leaves Done', () => {
+    const mod = moduleWith('Module', [pageItem(101), assignmentItem(1, 77)])
+    markModuleDone(585, mod)
+
+    unmarkItemDone(585, pageItem(101))
+
+    expect(isAssignmentDone(585, 77)).toBe(true)
+    expect(isModuleDone(585, mod)).toBe(false)
   })
 })
 
