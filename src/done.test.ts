@@ -5,6 +5,7 @@ import {
   isAssignmentDone,
   isLessonDone,
   isModuleDone,
+  markItemDone,
   markModuleDone,
   purgeDoneEntries,
   setAssignmentDone,
@@ -158,6 +159,21 @@ describe('derived Module Done', () => {
 describe('marking a whole Module Done', () => {
   beforeEach(() => {
     localStorage.clear()
+  })
+
+  it('marks a Page leaf by module-item id and an Assignment leaf by Canvas content_id', () => {
+    markItemDone(585, pageItem(101))
+    markItemDone(585, assignmentItem(1, 77))
+
+    expect(isLessonDone(585, 101)).toBe(true)
+    expect(isAssignmentDone(585, 77)).toBe(true)
+  })
+
+  it('ignores items that cannot carry a Done flag', () => {
+    markItemDone(585, { id: 400, type: 'SubHeader', title: 'Header' })
+    markItemDone(585, { id: 401, type: 'Assignment', title: 'No content id' })
+
+    expect(readStoredDone()).toBeNull()
   })
 
   it('marks every Done-able leaf Done, so the derived Module Done flips with no stored Module flag', () => {

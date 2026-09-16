@@ -37,7 +37,10 @@ const MODULES: FakeModule[] = [
   },
 ]
 
-const ASSIGNMENTS = [{ id: 900, name: 'Problem Set 1', due_at: '2026-09-16T10:00:00Z' }]
+const ASSIGNMENTS = [
+  { id: 900, name: 'Problem Set 1', due_at: '2026-09-16T10:00:00Z' },
+  { id: 901, name: 'Reading response', due_at: '2026-09-16T11:00:00Z' },
+]
 
 function stubProgramFetch(fetchMock: ReturnType<typeof vi.fn>): void {
   fetchMock.mockImplementation((url: string) => {
@@ -60,6 +63,16 @@ async function click(wrapper: VueWrapper, testid: string): Promise<void> {
   const button = wrapper.find(`[data-testid="${testid}"]`)
   expect(button.exists(), `expected ${testid} to exist`).toBe(true)
   await button.trigger('click')
+  await flushPromises()
+}
+
+async function navigateTo(wrapper: VueWrapper, label: string): Promise<void> {
+  const link = wrapper
+    .find('[data-testid="program-sidebar"]')
+    .findAll('a')
+    .find((candidate) => candidate.text() === label)
+  expect(link, `expected sidebar link ${label} to exist`).toBeDefined()
+  await link!.trigger('click')
   await flushPromises()
 }
 
@@ -106,15 +119,13 @@ describe('Mark Done: Lessons, Assignments, and Modules', () => {
 
     await click(wrapper, 'mark-done-900')
 
-    expect(wrapper.find('[data-testid="assignments-this-week"]').exists()).toBe(false)
-    expect(wrapper.text()).toContain('Nothing due — or everything due is already Done.')
+    const thisWeek = wrapper.find('[data-testid="assignments-this-week"]')
+    expect(thisWeek.exists()).toBe(true)
+    expect(thisWeek.text()).not.toContain('Problem Set 1')
+    expect(thisWeek.text()).toContain('Reading response')
+    expect(wrapper.text()).not.toContain('Nothing due — or everything due is already Done.')
 
-    const moduleLink = wrapper
-      .find('[data-testid="program-sidebar"]')
-      .findAll('a')
-      .find((link) => link.text() === 'Week 1')
-    await moduleLink!.trigger('click')
-    await flushPromises()
+    await navigateTo(wrapper, 'Week 1')
     await click(wrapper, 'module-tab-assignments')
 
     expect(wrapper.text()).toContain('No Assignments in this Module.')
@@ -165,22 +176,12 @@ describe('Mark Done: Lessons, Assignments, and Modules', () => {
     await click(wrapper, 'module-tab-assignments')
     await click(wrapper, 'mark-done-2')
 
-    const weekTwo = wrapper
-      .find('[data-testid="program-sidebar"]')
-      .findAll('a')
-      .find((link) => link.text() === 'Week 2')
-    await weekTwo!.trigger('click')
-    await flushPromises()
+    await navigateTo(wrapper, 'Week 2')
     await click(wrapper, 'module-tab-assignments')
     expect(wrapper.text()).toContain('No Assignments in this Module.')
 
-    const landingLink = wrapper
-      .find('[data-testid="program-sidebar"]')
-      .findAll('a')
-      .find((link) => link.text() === 'Due soon')
-    await landingLink!.trigger('click')
-    await flushPromises()
-    expect(wrapper.find('[data-testid="assignments-this-week"]').exists()).toBe(false)
+    await navigateTo(wrapper, 'Due soon')
+    expect(wrapper.find('[data-testid="assignments-this-week"]').text()).not.toContain('Problem Set 1')
   })
 
   it('marking Done never issues a Canvas API request', async () => {
@@ -202,12 +203,7 @@ describe('Mark Done: Lessons, Assignments, and Modules', () => {
     const { wrapper } = await mountAppAtPath('/programs/585/modules/101')
 
     await click(wrapper, 'mark-module-done')
-    const weekTwo = wrapper
-      .find('[data-testid="program-sidebar"]')
-      .findAll('a')
-      .find((link) => link.text() === 'Week 2')
-    await weekTwo!.trigger('click')
-    await flushPromises()
+    await navigateTo(wrapper, 'Week 2')
     await click(wrapper, 'mark-module-done')
 
     expect(sidebarModuleLabels(wrapper)).toEqual([])

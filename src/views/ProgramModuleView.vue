@@ -5,7 +5,13 @@ import { useQuery } from '@tanstack/vue-query'
 import type { ModuleItem } from '../api/canvas'
 import { canvasQueryOptions } from '../api/keys'
 import { useCanvasToken } from '../api/useCanvasToken'
-import { isAssignmentDone, isLessonDone, markModuleDone, doneVersion, setAssignmentDone, setLessonDone } from '../done'
+import {
+  doneVersion,
+  isAssignmentDone,
+  isLessonDone,
+  markItemDone,
+  markModuleDone,
+} from '../done'
 
 const props = defineProps<{ programId: string; moduleId: string }>()
 
@@ -60,14 +66,6 @@ const assignments = computed(() => {
       ),
   )
 })
-
-function markItemDone(item: ModuleItem): void {
-  if (item.type === 'Page') {
-    setLessonDone(courseId.value, item.id, true)
-  } else if (item.type === 'Assignment' && typeof item.content_id === 'number') {
-    setAssignmentDone(courseId.value, item.content_id, true)
-  }
-}
 
 function markThisModuleDone(): void {
   if (module_.value) markModuleDone(courseId.value, module_.value)
@@ -168,7 +166,7 @@ function canvasItemHref(item: ModuleItem): string {
                   type="button"
                   :data-testid="`mark-done-${item.id}`"
                   class="flex-none text-sm text-text-muted hover:text-heading"
-                  @click="markItemDone(item)"
+                  @click="markItemDone(courseId, item)"
                 >
                   Mark Done
                 </button>

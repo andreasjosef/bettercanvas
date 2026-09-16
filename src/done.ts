@@ -109,6 +109,15 @@ export function isModuleDone(courseId: number, module: CourseModule): boolean {
   return doneAble.length > 0 && doneAble.every((item) => isLeafDone(courseId, item))
 }
 
+/** Marks one Done-able leaf (a Lesson or an Assignment) Done; ignores other item types. */
+export function markItemDone(courseId: number, item: ModuleItem): void {
+  if (item.type === 'Page') {
+    setLessonDone(courseId, item.id, true)
+  } else if (item.type === 'Assignment' && typeof item.content_id === 'number') {
+    setAssignmentDone(courseId, item.content_id, true)
+  }
+}
+
 /**
  * Sugar for marking every one of the Module's Done-able leaves Done at once;
  * the Module's own Done state stays derived and is never stored. A Module with
@@ -116,9 +125,7 @@ export function isModuleDone(courseId: number, module: CourseModule): boolean {
  */
 export function markModuleDone(courseId: number, module: CourseModule): void {
   for (const item of module.items ?? []) {
-    if (!isDoneAbleItem(item)) continue
-    if (item.type === 'Page') setLessonDone(courseId, item.id, true)
-    else setAssignmentDone(courseId, item.content_id as number, true)
+    if (isDoneAbleItem(item)) markItemDone(courseId, item)
   }
 }
 
