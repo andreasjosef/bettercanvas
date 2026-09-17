@@ -9,3 +9,4 @@ createApp(App)
   .use(createAppRouter())
   .use(VueQueryPlugin, { queryClient: createAppQueryClient() })
   .mount('#app')
+const unused = 1
