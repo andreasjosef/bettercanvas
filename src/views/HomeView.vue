@@ -62,7 +62,9 @@ function formatDueDate(iso: string): string {
 
 <template>
   <main class="flex min-h-screen flex-col items-center p-4 gap-4">
-    <h1 class="m-0 font-heading text-heading text-2xl">Home</h1>
+    <h1 class="m-0 font-heading text-heading text-2xl">
+      Home
+    </h1>
     <RouterLink
       :to="{ name: 'settings' }"
       class="no-underline text-sm text-accent hover:opacity-90"
@@ -75,8 +77,16 @@ function formatDueDate(iso: string): string {
     >
       Previous Lectures
     </RouterLink>
-    <p v-if="loading" class="m-0 text-text-muted">Loading…</p>
-    <p v-else-if="!hasPrograms" class="m-0 text-text-muted flex flex-col items-center gap-2">
+    <p
+      v-if="loading"
+      class="m-0 text-text-muted"
+    >
+      Loading…
+    </p>
+    <p
+      v-else-if="!hasPrograms"
+      class="m-0 text-text-muted flex flex-col items-center gap-2"
+    >
       No active Programs yet.
       <RouterLink
         :to="{ name: 'picker' }"
@@ -85,14 +95,23 @@ function formatDueDate(iso: string): string {
         Pick your Programs
       </RouterLink>
     </p>
-    <ul v-else class="m-0 w-full max-w-2xl list-none p-0 flex flex-col">
-      <li v-for="row in programRows" :key="row.courseId">
+    <ul
+      v-else
+      class="m-0 w-full max-w-2xl list-none p-0 flex flex-col"
+    >
+      <li
+        v-for="row in programRows"
+        :key="row.courseId"
+      >
         <RouterLink
           :to="{ name: 'program', params: { programId: String(row.courseId) } }"
           class="block py-2 border-b border-border no-underline text-inherit text-left"
         >
           <span class="block font-heading text-heading text-lg">{{ row.name }}</span>
-          <span v-if="row.failed" class="block text-sm text-danger">
+          <span
+            v-if="row.failed"
+            class="block text-sm text-danger"
+          >
             Could not load upcoming assignments.
           </span>
           <span
@@ -101,10 +120,16 @@ function formatDueDate(iso: string): string {
           >
             Next due: {{ row.nextDueName }} — {{ formatDueDate(row.dueAt) }}
           </span>
-          <span v-else-if="row.nextDueName" class="block text-sm text-text-muted">
+          <span
+            v-else-if="row.nextDueName"
+            class="block text-sm text-text-muted"
+          >
             Next due: {{ row.nextDueName }}
           </span>
-          <span v-else class="block text-sm text-text-muted">No upcoming assignments.</span>
+          <span
+            v-else
+            class="block text-sm text-text-muted"
+          >No upcoming assignments.</span>
         </RouterLink>
       </li>
     </ul>

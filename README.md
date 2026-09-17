@@ -19,6 +19,16 @@ pnpm dev
 - `pnpm test` — run the test suite (Vitest)
 - `pnpm build` — type-check and build for production
 
+## Branch, PR, and release workflow
+
+Feature branches PR into `dev`; `dev` periodically PRs into `main` to
+release. CI (lint, typecheck, test) gates every PR into either branch.
+Hotfixes branch off `main` and go through the same PR/CI gate before
+being merged back into `dev`. See
+`docs/adr/0003-branching-and-release-workflow.md` for the full policy
+(tagging, versioning, and branch protection detail) and
+`CHANGELOG.md` for the release history.
+
 ## Deployment (Vercel)
 
 This app deploys to Vercel as static hosting plus one serverless function

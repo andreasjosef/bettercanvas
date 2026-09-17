@@ -82,11 +82,22 @@ function canvasItemHref(item: ModuleItem): string {
 
 <template>
   <div class="w-full max-w-2xl mx-auto flex flex-col p-4 gap-4">
-    <p v-if="loading" class="m-0 text-text-muted">Loading…</p>
-    <p v-else-if="failed" class="m-0 text-danger">
+    <p
+      v-if="loading"
+      class="m-0 text-text-muted"
+    >
+      Loading…
+    </p>
+    <p
+      v-else-if="failed"
+      class="m-0 text-danger"
+    >
       Could not load modules.
     </p>
-    <p v-else-if="!module_" class="m-0 text-text-muted">
+    <p
+      v-else-if="!module_"
+      class="m-0 text-text-muted"
+    >
       That Module is not part of this Program.
     </p>
     <template v-else>
@@ -139,8 +150,14 @@ function canvasItemHref(item: ModuleItem): string {
               : 'No Assignments in this Module.'
           }}
         </p>
-        <ol v-else class="m-0 list-none p-0 flex flex-col">
-          <li v-for="item in visibleItems" :key="item.id">
+        <ol
+          v-else
+          class="m-0 list-none p-0 flex flex-col"
+        >
+          <li
+            v-for="item in visibleItems"
+            :key="item.id"
+          >
             <template v-if="item.type === 'SubHeader'">
               <span
                 data-testid="subheader-divider"

@@ -88,13 +88,29 @@ const sections = computed(() => {
 
 <template>
   <div class="w-full max-w-2xl mx-auto flex flex-col p-4 gap-4">
-    <h1 class="m-0 font-heading text-heading text-2xl">{{ programName }}</h1>
-    <p v-if="loading" class="m-0 text-text-muted">Loading…</p>
-    <p v-else-if="failed" class="m-0 text-danger">
+    <h1 class="m-0 font-heading text-heading text-2xl">
+      {{ programName }}
+    </h1>
+    <p
+      v-if="loading"
+      class="m-0 text-text-muted"
+    >
+      Loading…
+    </p>
+    <p
+      v-else-if="failed"
+      class="m-0 text-danger"
+    >
       Could not load assignments.
     </p>
-    <div v-else class="flex flex-col gap-6">
-      <p v-if="sections.length === 0" class="m-0 text-text-muted">
+    <div
+      v-else
+      class="flex flex-col gap-6"
+    >
+      <p
+        v-if="sections.length === 0"
+        class="m-0 text-text-muted"
+      >
         Nothing due — or everything due is already Done.
       </p>
       <section

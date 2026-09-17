@@ -100,19 +100,40 @@ function confirmSelection(): void {
 
 <template>
   <main class="flex min-h-screen flex-col items-center justify-center p-4 text-center gap-2">
-    <h1 class="m-0 font-heading text-heading text-2xl">{{ heading }}</h1>
+    <h1 class="m-0 font-heading text-heading text-2xl">
+      {{ heading }}
+    </h1>
     <p class="m-0 text-text-muted">
       {{ description }}
     </p>
-    <p v-if="loadError" role="alert" class="m-0 text-sm text-danger">
+    <p
+      v-if="loadError"
+      role="alert"
+      class="m-0 text-sm text-danger"
+    >
       {{ loadError }}
     </p>
-    <p v-else-if="loading" class="m-0 text-text-muted">Loading…</p>
-    <form v-else class="flex flex-col items-center gap-2 max-w-sm w-full" @submit.prevent="confirmSelection">
-      <p v-if="entries.length === 0" class="m-0 text-text-muted">
+    <p
+      v-else-if="loading"
+      class="m-0 text-text-muted"
+    >
+      Loading…
+    </p>
+    <form
+      v-else
+      class="flex flex-col items-center gap-2 max-w-sm w-full"
+      @submit.prevent="confirmSelection"
+    >
+      <p
+        v-if="entries.length === 0"
+        class="m-0 text-text-muted"
+      >
         No Canvas courses found on your account.
       </p>
-      <ul v-else class="m-0 w-full list-none p-0 flex flex-col gap-1">
+      <ul
+        v-else
+        class="m-0 w-full list-none p-0 flex flex-col gap-1"
+      >
         <li
           v-for="entry in entries"
           :key="entry.courseId"
@@ -123,19 +144,22 @@ function confirmSelection(): void {
               type="checkbox"
               :aria-label="entry.name"
               :checked="entry.selected"
-              @change="toggle(entry, ($event.target as HTMLInputElement).checked)"
               class="accent-accent"
-            />
+              @change="toggle(entry, ($event.target as HTMLInputElement).checked)"
+            >
             <span>{{ entry.name }}</span>
           </label>
-          <label v-if="entry.selected" class="flex items-center gap-2 p-1 cursor-pointer text-sm text-text-muted">
+          <label
+            v-if="entry.selected"
+            class="flex items-center gap-2 p-1 cursor-pointer text-sm text-text-muted"
+          >
             <input
               type="checkbox"
               :aria-label="`Archive ${entry.name}`"
               :checked="entry.archived"
-              @change="toggleArchived(entry, ($event.target as HTMLInputElement).checked)"
               class="accent-accent"
-            />
+              @change="toggleArchived(entry, ($event.target as HTMLInputElement).checked)"
+            >
             <span>Archived</span>
           </label>
         </li>

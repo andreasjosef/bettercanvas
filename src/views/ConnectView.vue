@@ -40,14 +40,24 @@ async function connect(): Promise<void> {
     <h1 class="m-0 font-heading text-heading text-2xl">
       {{ reconnecting ? 'Reconnect' : 'Connect' }}
     </h1>
-    <p v-if="reconnecting" role="status" class="m-0 text-sm">
+    <p
+      v-if="reconnecting"
+      role="status"
+      class="m-0 text-sm"
+    >
       Your Canvas token is invalid or has expired. Paste a fresh token to
       reconnect.
     </p>
-    <p v-else class="m-0 text-text-muted">
+    <p
+      v-else
+      class="m-0 text-text-muted"
+    >
       Paste your Canvas Personal Access Token to begin.
     </p>
-    <form class="flex flex-col items-center gap-2 max-w-sm w-full" @submit.prevent="connect">
+    <form
+      class="flex flex-col items-center gap-2 max-w-sm w-full"
+      @submit.prevent="connect"
+    >
       <input
         v-model="token"
         name="token"
@@ -56,7 +66,7 @@ async function connect(): Promise<void> {
         spellcheck="false"
         placeholder="Canvas Personal Access Token"
         class="w-full rounded-md border border-border bg-surface px-3 py-2 text-text placeholder:text-text-muted focus:outline-hidden focus:ring-2 focus:ring-focus-ring"
-      />
+      >
       <button
         type="submit"
         :disabled="submitting"
@@ -64,7 +74,11 @@ async function connect(): Promise<void> {
       >
         {{ submitting ? 'Connecting…' : 'Connect' }}
       </button>
-      <p v-if="error" role="alert" class="m-0 text-sm text-danger">
+      <p
+        v-if="error"
+        role="alert"
+        class="m-0 text-sm text-danger"
+      >
         {{ error }}
       </p>
     </form>
