@@ -78,17 +78,27 @@ function unmarkModule(module_: CourseModule): void {
 
 <template>
   <div class="w-full max-w-2xl mx-auto flex flex-col p-4 gap-4">
-    <h1 class="m-0 font-heading text-heading text-2xl">Finished</h1>
-    <p v-if="loading" class="m-0 text-text-muted">Loading…</p>
-    <p v-else-if="failed" class="m-0 text-danger">
+    <h1 class="m-0 font-heading text-heading text-2xl">
+      Finished
+    </h1>
+    <p
+      v-if="loading"
+      class="m-0 text-text-muted"
+    >
+      Loading…
+    </p>
+    <p
+      v-else-if="failed"
+      class="m-0 text-danger"
+    >
       Could not load Finished.
     </p>
     <template v-else>
       <p
         v-if="
           doneModules.length === 0 &&
-          doneLessons.length === 0 &&
-          doneAssignments.length === 0
+            doneLessons.length === 0 &&
+            doneAssignments.length === 0
         "
         class="m-0 text-text-muted"
       >
@@ -99,7 +109,9 @@ function unmarkModule(module_: CourseModule): void {
         data-testid="finished-modules"
         class="flex flex-col gap-2"
       >
-        <h2 class="m-0 font-heading text-heading text-lg">Done Modules</h2>
+        <h2 class="m-0 font-heading text-heading text-lg">
+          Done Modules
+        </h2>
         <ol class="m-0 list-none p-0 flex flex-col">
           <li
             v-for="module_ in doneModules"
@@ -123,7 +135,9 @@ function unmarkModule(module_: CourseModule): void {
         data-testid="finished-lessons"
         class="flex flex-col gap-2"
       >
-        <h2 class="m-0 font-heading text-heading text-lg">Done Lessons</h2>
+        <h2 class="m-0 font-heading text-heading text-lg">
+          Done Lessons
+        </h2>
         <ol class="m-0 list-none p-0 flex flex-col">
           <li
             v-for="item in doneLessons"
@@ -147,7 +161,9 @@ function unmarkModule(module_: CourseModule): void {
         data-testid="finished-assignments"
         class="flex flex-col gap-2"
       >
-        <h2 class="m-0 font-heading text-heading text-lg">Done Assignments</h2>
+        <h2 class="m-0 font-heading text-heading text-lg">
+          Done Assignments
+        </h2>
         <ol class="m-0 list-none p-0 flex flex-col">
           <li
             v-for="assignment in doneAssignments"

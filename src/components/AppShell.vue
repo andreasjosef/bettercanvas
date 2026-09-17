@@ -120,7 +120,10 @@ const visibleModules = computed(() => {
           >
             Previous Lectures
           </RouterLink>
-          <RouterLink :to="{ name: 'settings' }" :class="navLinkClass">
+          <RouterLink
+            :to="{ name: 'settings' }"
+            :class="navLinkClass"
+          >
             Settings
           </RouterLink>
         </nav>

@@ -117,11 +117,22 @@ function isReadableType(type: ModuleItem['type']): boolean {
 
 <template>
   <main class="mx-auto w-full max-w-3xl flex flex-col gap-4 p-4">
-    <p v-if="loading" class="m-0 text-text-muted">Loading…</p>
-    <p v-else-if="failed" class="m-0 text-danger">
+    <p
+      v-if="loading"
+      class="m-0 text-text-muted"
+    >
+      Loading…
+    </p>
+    <p
+      v-else-if="failed"
+      class="m-0 text-danger"
+    >
       Could not load this item.
     </p>
-    <p v-else-if="notFound" class="m-0 text-text-muted">
+    <p
+      v-else-if="notFound"
+      class="m-0 text-text-muted"
+    >
       That item is not part of this Program.
     </p>
     <template v-else-if="item">
@@ -137,11 +148,19 @@ function isReadableType(type: ModuleItem['type']): boolean {
       <article class="reading-column">
         <h1>{{ item.title }}</h1>
         <template v-if="isReadableType(item.type)">
-          <div v-if="sanitizedHtml === ''" class="text-text-muted">
+          <div
+            v-if="sanitizedHtml === ''"
+            class="text-text-muted"
+          >
             This item has no content yet.
           </div>
-          <!-- eslint-disable-next-line vue/no-v-html -- content passes through sanitizeCanvasHtml first -->
-          <div v-else ref="contentEl" v-html="sanitizedHtml" />
+          <!-- eslint-disable vue/no-v-html -- content passes through sanitizeCanvasHtml first -->
+          <div
+            v-else
+            ref="contentEl"
+            v-html="sanitizedHtml"
+          />
+          <!-- eslint-enable vue/no-v-html -->
         </template>
         <!--
           Only Page/Assignment items link here from the Modules view, but a
