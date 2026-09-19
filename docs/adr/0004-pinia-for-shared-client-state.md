@@ -1,0 +1,3 @@
+# Adopt Pinia for shared client state
+
+Until now, cross-component state (e.g. the Canvas token in `useCanvasToken`) has been handled with plain composables wrapping module-scoped reactive refs, with no state-management library in the dependency tree. The loading-state bar effort needs state shared across every view (route-transition and query-fetch signals merged into one show/hide flag), and rather than stretch the composable convention further, we're introducing Pinia now, anticipating that the app's shared-state needs will keep growing beyond what ad hoc composables comfortably cover. Pinia is first used for the loading bar's shared loading state; existing composables are not required to migrate.
