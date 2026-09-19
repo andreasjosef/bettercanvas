@@ -39,9 +39,10 @@ describe('App routing', () => {
 
   it('renders the reading screen for /programs/p1/read/item1', async () => {
     // The reading view loads its content asynchronously (no fetch stub
-    // here), so assert on its deterministic initial state.
+    // here); its pending state renders nothing local — the root loading
+    // bar is the sole loading affordance.
     const wrapper = await mountAt('/programs/p1/read/item1')
-    expect(wrapper.text()).toContain('Loading…')
+    expect(wrapper.text()).not.toContain('Loading…')
   })
 
   it('redirects unknown paths to home', async () => {
