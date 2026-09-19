@@ -78,13 +78,7 @@ function formatDueDate(iso: string): string {
       Previous Lectures
     </RouterLink>
     <p
-      v-if="loading"
-      class="m-0 text-text-muted"
-    >
-      Loading…
-    </p>
-    <p
-      v-else-if="!hasPrograms"
+      v-if="!loading && !hasPrograms"
       class="m-0 text-text-muted flex flex-col items-center gap-2"
     >
       No active Programs yet.
@@ -96,7 +90,7 @@ function formatDueDate(iso: string): string {
       </RouterLink>
     </p>
     <ul
-      v-else
+      v-else-if="!loading"
       class="m-0 w-full max-w-2xl list-none p-0 flex flex-col"
     >
       <li

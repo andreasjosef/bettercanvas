@@ -118,19 +118,13 @@ function isReadableType(type: ModuleItem['type']): boolean {
 <template>
   <main class="mx-auto w-full max-w-3xl flex flex-col gap-4 p-4">
     <p
-      v-if="loading"
-      class="m-0 text-text-muted"
-    >
-      Loading…
-    </p>
-    <p
-      v-else-if="failed"
+      v-if="!loading && failed"
       class="m-0 text-danger"
     >
       Could not load this item.
     </p>
     <p
-      v-else-if="notFound"
+      v-else-if="!loading && notFound"
       class="m-0 text-text-muted"
     >
       That item is not part of this Program.

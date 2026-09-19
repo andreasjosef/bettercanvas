@@ -113,14 +113,8 @@ function confirmSelection(): void {
     >
       {{ loadError }}
     </p>
-    <p
-      v-else-if="loading"
-      class="m-0 text-text-muted"
-    >
-      Loading…
-    </p>
     <form
-      v-else
+      v-else-if="!loading"
       class="flex flex-col items-center gap-2 max-w-sm w-full"
       @submit.prevent="confirmSelection"
     >
