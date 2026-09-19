@@ -82,18 +82,12 @@ function unmarkModule(module_: CourseModule): void {
       Finished
     </h1>
     <p
-      v-if="loading"
-      class="m-0 text-text-muted"
-    >
-      Loading…
-    </p>
-    <p
-      v-else-if="failed"
+      v-if="!loading && failed"
       class="m-0 text-danger"
     >
       Could not load Finished.
     </p>
-    <template v-else>
+    <template v-else-if="!loading">
       <p
         v-if="
           doneModules.length === 0 &&

@@ -1,16 +1,29 @@
 import { flushPromises, mount, type DOMWrapper } from '@vue/test-utils'
 import { VueQueryPlugin } from '@tanstack/vue-query'
+import { createPinia } from 'pinia'
 import { expect } from 'vitest'
 import App from '../App.vue'
 import { createAppRouter } from '../router'
 import { createAppQueryClient } from '../api/queryClient'
 
-/** Router + Query plugin tuple shared by every full-app mount in tests. */
+/**
+ * Router + Query plugin tuple shared by every full-app mount in tests.
+ * Pinia is installed too, because App.vue itself now consumes the
+ * loading-state store at its root (issue #81).
+ */
 export function appPlugins() {
-  return [
-    createAppRouter(),
-    [VueQueryPlugin, { queryClient: createAppQueryClient() }],
-  ] as [ReturnType<typeof createAppRouter>, [typeof VueQueryPlugin, unknown]]
+  const pinia = createPinia()
+  const router = createAppRouter()
+  const queryClient = createAppQueryClient()
+  return {
+    pinia,
+    router,
+    queryClient,
+    queryPlugin: [VueQueryPlugin, { queryClient }] as [
+      typeof VueQueryPlugin,
+      unknown,
+    ],
+  }
 }
 
 export interface FakeCourse {
@@ -66,10 +79,12 @@ export function modulesResponse(modules: FakeModule[]): Response {
 }
 
 export async function mountAppAtPath(path: string) {
-  const [router, queryPlugin] = appPlugins()
+  const { pinia, router, queryPlugin } = appPlugins()
   await router.push(path)
   await router.isReady()
-  const wrapper = mount(App, { global: { plugins: [router, queryPlugin] } })
+  const wrapper = mount(App, {
+    global: { plugins: [pinia, router, queryPlugin] },
+  })
   await flushPromises()
   return { wrapper, router }
 }

@@ -83,24 +83,18 @@ function canvasItemHref(item: ModuleItem): string {
 <template>
   <div class="w-full max-w-2xl mx-auto flex flex-col p-4 gap-4">
     <p
-      v-if="loading"
-      class="m-0 text-text-muted"
-    >
-      Loading…
-    </p>
-    <p
-      v-else-if="failed"
+      v-if="!loading && failed"
       class="m-0 text-danger"
     >
       Could not load modules.
     </p>
     <p
-      v-else-if="!module_"
+      v-else-if="!loading && !module_"
       class="m-0 text-text-muted"
     >
       That Module is not part of this Program.
     </p>
-    <template v-else>
+    <template v-else-if="module_">
       <div class="flex items-baseline justify-between gap-3">
         <h1 class="m-0 font-heading text-heading text-2xl">
           {{ module_.name }}

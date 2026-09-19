@@ -165,6 +165,13 @@ describe('ReadingView', () => {
     expect(wrapper.find('article').exists()).toBe(false)
   })
 
+  it('renders nothing local while the content fetch is pending — no "Loading…" text', async () => {
+    fetchMock.mockImplementation(() => new Promise<Response>(() => {}))
+    const { wrapper } = await mountAppAtPath('/programs/585/read/2')
+
+    expect(wrapper.text()).not.toContain('Loading…')
+  })
+
   it('redirects to connect when no token is stored, fetching nothing', async () => {
     localStorage.removeItem(TOKEN_STORAGE_KEY)
     stubFetchByPath(fetchMock)

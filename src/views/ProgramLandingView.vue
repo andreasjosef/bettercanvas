@@ -92,19 +92,13 @@ const sections = computed(() => {
       {{ programName }}
     </h1>
     <p
-      v-if="loading"
-      class="m-0 text-text-muted"
-    >
-      Loading…
-    </p>
-    <p
-      v-else-if="failed"
+      v-if="!loading && failed"
       class="m-0 text-danger"
     >
       Could not load assignments.
     </p>
     <div
-      v-else
+      v-else-if="!loading"
       class="flex flex-col gap-6"
     >
       <p

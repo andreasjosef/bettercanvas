@@ -63,6 +63,15 @@ describe('HomeView', () => {
     expect(wrapper.text()).toContain('No active Programs')
   })
 
+  it('renders nothing local while the next-due fetch is pending — no "Loading…" text and no premature rows', async () => {
+    savePrograms([{ courseId: 585, name: 'Programmeringäsning', archived: false }])
+    fetchMock.mockImplementation(() => new Promise<Response>(() => {}))
+    const { wrapper } = await mountAppAtPath('/')
+
+    expect(wrapper.text()).not.toContain('Loading…')
+    expect(wrapper.find('ul').exists()).toBe(false)
+  })
+
   it('a failed next-due fetch marks that entry as failed without breaking the rest of the list', async () => {
     savePrograms([
       { courseId: 585, name: 'Programmeringäsning', archived: false },

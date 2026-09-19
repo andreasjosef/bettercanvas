@@ -9,6 +9,19 @@ tags, and this changelog fit into the branch/PR/CI flow.
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-09-19
+
+### Added
+
+- App-wide loading bar mounted at the app root, backed by a Pinia
+  loading-state store that merges route-navigation and Vue Query
+  fetch-in-flight signals with anti-flash timing (#79, #80, #81).
+
+### Changed
+
+- Per-view local "Loading…" text retired now that the loading bar is
+  the sole loading affordance across all in-scope views (#82).
+
 ## [0.1.0] - 2026-09-17
 
 ### Added
