@@ -3,14 +3,18 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { createMemoryHistory } from 'vue-router'
 import App from './App.vue'
 import { createAppRouter } from './router'
+import { ANTI_FLASH_MS, useLoadingStore, wireLoadingSignals } from './stores/loading'
 import { appPlugins } from './test/appHarness'
+import { PROGRAMS_STORAGE_KEY } from './programs'
 import { TOKEN_STORAGE_KEY } from './token'
 
 const mountAt = async (path: string) => {
-  const [router, queryPlugin] = appPlugins()
+  const { pinia, router, queryPlugin } = appPlugins()
   await router.push(path)
   await router.isReady()
-  const wrapper = mount(App, { global: { plugins: [router, queryPlugin] } })
+  const wrapper = mount(App, {
+    global: { plugins: [pinia, router, queryPlugin] },
+  })
   return wrapper
 }
 
@@ -68,10 +72,12 @@ describe('App shell (persistent sidebar)', () => {
   })
 
   const mountAt = async (path: string) => {
-    const [router, queryPlugin] = appPlugins()
+    const { pinia, router, queryPlugin } = appPlugins()
     await router.push(path)
     await router.isReady()
-    const wrapper = mount(App, { global: { plugins: [router, queryPlugin] } })
+    const wrapper = mount(App, {
+      global: { plugins: [pinia, router, queryPlugin] },
+    })
     await flushPromises()
     return { wrapper, router }
   }
@@ -179,5 +185,195 @@ describe('App shell (persistent sidebar)', () => {
     await previousLectures?.trigger('click')
     await flushPromises()
     expect(router.currentRoute.value.name).toBe('previous-lectures')
+  })
+})
+
+describe('Root-mounted loading bar', () => {
+  // Fake timers make the store's anti-flash window (100ms) deterministic
+  // without waiting in real time. flushMicrotasks deliberately avoids
+  // flushPromises, which resolves via setTimeout and would deadlock under
+  // fake timers.
+  beforeEach(() => {
+    vi.useFakeTimers()
+    localStorage.clear()
+    localStorage.setItem(TOKEN_STORAGE_KEY, 'loading-bar-test-token')
+    // HomeView only fetches when an active Program exists, so seed one to
+    // make the fetch-driven scenarios exercise the real query path.
+    localStorage.setItem(
+      PROGRAMS_STORAGE_KEY,
+      JSON.stringify([{ courseId: 585, name: 'Programming', archived: false }]),
+    )
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+    vi.unstubAllGlobals()
+  })
+
+  async function flushMicrotasks() {
+    for (let i = 0; i < 20; i++) {
+      await Promise.resolve()
+    }
+  }
+
+  async function mountLoadingApp(path: string, fetchImpl?: () => Promise<unknown>) {
+    if (fetchImpl) vi.stubGlobal('fetch', vi.fn(fetchImpl))
+    const { pinia, router, queryClient, queryPlugin } = appPlugins()
+    // Mirror main.ts: the bar is driven by the same wiring the real app uses.
+    wireLoadingSignals(pinia, router, queryClient)
+    await router.push(path)
+    await router.isReady()
+    const wrapper = mount(App, {
+      global: { plugins: [pinia, router, queryPlugin] },
+    })
+    await flushMicrotasks()
+    return { wrapper, router, pinia }
+  }
+
+  const jsonResponse = () =>
+    new Response(JSON.stringify([]), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    })
+
+  it('stays hidden when nothing is loading', async () => {
+    const { wrapper } = await mountLoadingApp('/', () =>
+      Promise.resolve(jsonResponse()),
+    )
+    vi.advanceTimersByTime(ANTI_FLASH_MS + 1)
+    await flushMicrotasks()
+    expect(wrapper.find('[data-testid="loading-bar"]').exists()).toBe(false)
+  })
+
+  it('is visible above the sidebar on a shelled route while a fetch is in flight', async () => {
+    const { wrapper } = await mountLoadingApp('/', () => new Promise(() => {}))
+    const aside = wrapper.find('aside')
+    expect(aside.exists()).toBe(true)
+    // Let vue-query's batched fetch-start notification land (it schedules
+    // via setTimeout), then cross the anti-flash window.
+    vi.advanceTimersByTime(1)
+    await flushMicrotasks()
+    vi.advanceTimersByTime(ANTI_FLASH_MS)
+    await flushMicrotasks()
+
+    const bar = wrapper.find('[data-testid="loading-bar"]')
+    expect(bar.exists()).toBe(true)
+    // Above the sidebar: outside the aside entirely, and preceding it in
+    // document order — one mount above both shell branches.
+    expect(bar.element.closest('aside')).toBeNull()
+    const position = bar.element.compareDocumentPosition(aside.element)
+    expect(position & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
+  it.each([
+    ['/connect', 'Connect'],
+    ['/picker', 'Pick your Programs'],
+  ])('is visible on the bare %s route without a sidebar', async (path) => {
+    // Neither bare view fetches on mount, so drive the store through the
+    // app's pinia directly.
+    const { wrapper, pinia } = await mountLoadingApp(path)
+    expect(wrapper.find('aside').exists()).toBe(false)
+    useLoadingStore(pinia).setFetchCount(1)
+    vi.advanceTimersByTime(ANTI_FLASH_MS)
+    await flushMicrotasks()
+
+    expect(wrapper.find('[data-testid="loading-bar"]').exists()).toBe(true)
+  })
+
+  it('is visible while a navigation is in flight, then hides when it settles', async () => {
+    let release: () => void = () => {}
+    const { wrapper, router } = await mountLoadingApp('/previous-lectures')
+    // Block the next navigation the way a slow guard would.
+    router.beforeEach(
+      () =>
+        new Promise<void>((resolve) => {
+          release = resolve
+        }),
+    )
+    const push = router.push('/picker')
+    await flushMicrotasks()
+    expect(wrapper.find('[data-testid="loading-bar"]').exists()).toBe(false)
+
+    vi.advanceTimersByTime(ANTI_FLASH_MS)
+    await flushMicrotasks()
+    expect(wrapper.find('[data-testid="loading-bar"]').exists()).toBe(true)
+
+    release()
+    await push
+    await flushMicrotasks()
+    expect(wrapper.find('[data-testid="loading-bar"]').exists()).toBe(false)
+  })
+
+  it('becomes visible during a deliberately delayed fetch, then disappears once it resolves', async () => {
+    let resolveFetch: (response: Response) => void = () => {}
+    const { wrapper } = await mountLoadingApp(
+      '/',
+      () =>
+        new Promise<Response>((resolve) => {
+          resolveFetch = resolve
+        }),
+    )
+    vi.advanceTimersByTime(1)
+    await flushMicrotasks()
+    expect(wrapper.find('[data-testid="loading-bar"]').exists()).toBe(false)
+
+    vi.advanceTimersByTime(ANTI_FLASH_MS)
+    await flushMicrotasks()
+    expect(wrapper.find('[data-testid="loading-bar"]').exists()).toBe(true)
+
+    resolveFetch(jsonResponse())
+    vi.advanceTimersByTime(1)
+    await flushMicrotasks()
+    expect(wrapper.find('[data-testid="loading-bar"]').exists()).toBe(false)
+  })
+
+  it('carries role="progressbar" and aria-valuetext, with no aria-valuenow', async () => {
+    const { wrapper, pinia } = await mountLoadingApp('/')
+    useLoadingStore(pinia).setFetchCount(1)
+    vi.advanceTimersByTime(ANTI_FLASH_MS)
+    await flushMicrotasks()
+
+    const bar = wrapper.find('[data-testid="loading-bar"]')
+    expect(bar.attributes('role')).toBe('progressbar')
+    expect(bar.attributes('aria-valuetext')).toBe('Loading')
+    expect(bar.attributes('aria-valuenow')).toBeUndefined()
+  })
+
+  it('uses --color-accent for its visual treatment', async () => {
+    const { wrapper, pinia } = await mountLoadingApp('/')
+    useLoadingStore(pinia).setFetchCount(1)
+    vi.advanceTimersByTime(ANTI_FLASH_MS)
+    await flushMicrotasks()
+
+    // bg-accent is the Tailwind theme-key mapping of var(--color-accent);
+    // the sweep element carries it, per the components-consume-theme-keys
+    // convention.
+    const sweep = wrapper.find('[data-testid="loading-bar"] .loading-bar-sweep')
+    expect(sweep.exists()).toBe(true)
+    expect(sweep.classes()).toContain('bg-accent')
+  })
+
+  it('clears on a failed fetch with no distinct error styling on the bar', async () => {
+    let rejectFetch: (reason: unknown) => void = () => {}
+    const { wrapper } = await mountLoadingApp(
+      '/',
+      () =>
+        new Promise<Response>((_resolve, reject) => {
+          rejectFetch = reject
+        }),
+    )
+    await flushMicrotasks()
+    vi.advanceTimersByTime(1)
+    await flushMicrotasks()
+    vi.advanceTimersByTime(ANTI_FLASH_MS)
+    await flushMicrotasks()
+    expect(wrapper.find('[data-testid="loading-bar"]').exists()).toBe(true)
+
+    rejectFetch(new Error('network down'))
+    vi.advanceTimersByTime(1)
+    await flushMicrotasks()
+    // Same visible → false transition as a success: the bar unmounts
+    // outright, so there is no error variant to style.
+    expect(wrapper.find('[data-testid="loading-bar"]').exists()).toBe(false)
   })
 })
